@@ -1,0 +1,1772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TRAP LOGGER">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>TRAP LOGGER Ver 6.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-column range recorder. Sticky tabs on top, a scorecard header that mirrors the shooter's own app,
+   thumb-height entry buttons, then a 25-row ledger with the ISSF scheme values filled in per target. */
+/* White theme only. Every color is a token on :root and the page sets its own background. */
+:root {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F7;
+  --ink: #123B52;
+  --muted: #55707E;
+  --line: #D3DEE3;
+  --accent: #14465F;
+  --on-accent: #FFFFFF;
+  --hit: #17767C;
+  --on-hit: #FFFFFF;
+  --second: #E3B21F;
+  --on-second: #2B2200;
+  --miss: #C93B2A;
+  --on-miss: #FFFFFF;
+  --miss-bg: #FCEDEA;
+  --dir-L: #2B7F37;
+  --dir-S: #E3B21F;
+  --dir-S-ink: #8A6A00;
+  --dir-R: #C93B2A;
+  --empty: #D5DFE3;
+  --focus: #2A7FB5;
+  --warn: #B26A00;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 760px; margin-inline: auto; padding-inline: 16px; }
+.bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 10px 6px; }
+.bar h1 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: .02em; text-transform: uppercase; color: var(--accent); }
+.save { font-size: 12.5px; color: var(--muted); text-align: right; min-width: 0; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 4px 9px; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+.wrap { max-width: 760px; margin-inline: auto; padding-inline: 16px; padding-block: 14px 48px; display: flex; flex-direction: column; gap: 14px; }
+.wrap > section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; font-weight: 600; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.danger { color: var(--miss); }
+.btn.danger.armed { background: var(--miss); color: var(--on-miss); border-color: var(--miss); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+
+details.setup { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+details.setup > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+details.setup > summary::-webkit-details-marker { display: none; }
+.sum-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.sum-title::after { content: "  +"; }
+details[open] .sum-title::after { content: "  \2212"; }
+.sum-text { color: var(--muted); font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px 12px; padding: 0 14px 14px; }
+.grid .wide { grid-column: 1 / -1; }
+.field label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.field input, .field select, .field textarea { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 8px 9px; }
+.field textarea { resize: vertical; min-height: 56px; }
+
+.score-card { display: flex; flex-direction: column; gap: 10px; }
+.score-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.score-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.score-meta .line1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: .03em; text-transform: uppercase; color: var(--accent); }
+.score-meta .line2 { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.score { font-family: var(--font-display); font-weight: 700; line-height: .85; color: var(--accent); white-space: nowrap; }
+.score b { font-size: 68px; font-weight: 700; }
+.score small { font-size: 22px; color: var(--muted); font-weight: 600; margin-left: 2px; }
+.strip-wrap { display: flex; flex-direction: column; gap: 3px; }
+.arrows, .stns, .strip { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; }
+.arrows span { text-align: center; font-size: 11px; line-height: 1; color: var(--muted); }
+.stns span { text-align: center; font-size: 10px; line-height: 1; color: var(--muted); font-family: var(--font-mono); }
+.strip button { height: 32px; border: 0; padding: 0; border-radius: 2px; background: var(--empty); cursor: pointer; min-width: 0; }
+.strip button.G { background: var(--hit); } .strip button.Y { background: var(--second); } .strip button.R { background: var(--miss); }
+.strip button.on { outline: 2px solid var(--ink); outline-offset: 1px; }
+.counts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+.counts span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; background: var(--empty); }
+.dot.G { background: var(--hit); } .dot.Y { background: var(--second); } .dot.R { background: var(--miss); }
+
+.entry { display: flex; flex-direction: column; gap: 12px; }
+.entry-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tnum { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; color: var(--accent); }
+.tnum small { font-size: 20px; color: var(--muted); font-weight: 600; }
+.pegs { display: flex; gap: 6px; align-items: center; }
+.peg { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.peg.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 500; }
+.stn-label { font-size: 13px; color: var(--muted); text-align: right; }
+.choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.choice { background: var(--bg); border: 2px solid var(--line); border-radius: 10px; padding: 10px 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; text-align: center; }
+.choice .big { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; }
+.choice .name { font-weight: 600; font-size: 14px; }
+.choice .sub { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.choice[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.choice[aria-pressed="true"] .sub { color: inherit; opacity: .85; }
+.choice.res .big { font-size: 26px; text-transform: uppercase; letter-spacing: .03em; }
+.choice.res.G { border-color: var(--hit); } .choice.res.Y { border-color: var(--second); } .choice.res.R { border-color: var(--miss); }
+.choice.res.G[aria-pressed="true"] { background: var(--hit); color: var(--on-hit); }
+.choice.res.Y[aria-pressed="true"] { background: var(--second); color: var(--on-second); border-color: var(--second); }
+.choice.res.R[aria-pressed="true"] { background: var(--miss); color: var(--on-miss); }
+.entry-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
+.trap-sum { font-size: 14px; color: var(--muted); }
+.trap-sum b { color: var(--ink); font-family: var(--font-mono); font-weight: 500; }
+.done { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; font-weight: 600; }
+
+.pattern { display: flex; flex-direction: column; gap: 6px; }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.pchip { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); font-size: 13px; }
+.pchip b { font-family: var(--font-mono); font-weight: 500; }
+.pchip.warn { border-color: var(--warn); color: var(--warn); }
+.note { font-size: 13px; color: var(--muted); }
+.pchip.bad { border-color: var(--miss); background: var(--miss-bg); color: var(--miss); font-weight: 600; }
+.pchip.pred { display: flex; flex-direction: column; gap: 2px; }
+.pchip.pred.exact { border-color: var(--hit); }
+.pchip .pt { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.pchip .odds { font-family: var(--font-mono); }
+.exacttag { color: var(--hit); font-weight: 600; }
+.alert { background: var(--miss-bg); border: 1px solid var(--miss); color: var(--miss); border-radius: 8px; padding: 9px 12px; font-weight: 600; }
+.hint { background: var(--surface-2); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.hint b { font-family: var(--font-mono); font-weight: 500; }
+.choice.full { opacity: .55; border-style: dashed; }
+.choice.full[aria-pressed="true"] { opacity: 1; }
+/* direction colors (left green, straight yellow, right red), graded by chance: g1 under 30%, g2 30 to 49%, g3 50 to 74%, g4 75% and up */
+.choice.dir { --c: var(--dir-L); border-color: var(--c); }
+.choice.dir[data-dir="S"] { --c: var(--dir-S); }
+.choice.dir[data-dir="R"] { --c: var(--dir-R); }
+.choice.dir.g1 { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+.choice.dir.g2 { background: color-mix(in srgb, var(--c) 30%, var(--surface)); }
+.choice.dir.g3 { background: color-mix(in srgb, var(--c) 55%, var(--surface)); }
+.choice.dir.g4 { background: var(--c); color: #FFFFFF; }
+.choice.dir.g4 .sub, .choice.dir.g4 .pct { color: #FFFFFF; }
+.choice.dir.g0 { background: var(--surface-2); border-color: var(--line); color: var(--muted); }
+.choice.dir[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #FFFFFF; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.choice.dir[aria-pressed="true"] .sub, .choice.dir[aria-pressed="true"] .pct { color: #FFFFFF; opacity: 1; }
+.choice.dir[data-dir="S"].g4, .choice.dir[data-dir="S"][aria-pressed="true"] { color: var(--on-second); }
+.choice.dir[data-dir="S"].g4 .sub, .choice.dir[data-dir="S"].g4 .pct, .choice.dir[data-dir="S"][aria-pressed="true"] .sub, .choice.dir[data-dir="S"][aria-pressed="true"] .pct { color: var(--on-second); }
+.choice .pct { font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; }
+.arrows span.dL { color: var(--dir-L); } .arrows span.dS { color: var(--dir-S-ink); } .arrows span.dR { color: var(--dir-R); }
+td.badcell { color: var(--miss); font-weight: 700; }
+.choices.five { grid-template-columns: repeat(5, 1fr); }
+.choice.startpick { padding: 14px 4px; }
+.choice.startpick:hover { border-color: var(--accent); }
+.cond { display: flex; flex-direction: column; gap: 10px; }
+.cond-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
+.cond-head h2 { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.cond .grid { padding: 0; }
+
+.tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; align-items: center; font-size: 13.5px; }
+.tools label { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th { text-align: left; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface-2); }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+td.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+tr.row { cursor: pointer; }
+tr.row.on td { background: var(--surface-2); }
+tr.row.on td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+.tin { width: 64px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-family: var(--font-mono); text-align: right; }
+.tin.bad { border-color: var(--miss); }
+
+.rtotals { color: var(--muted); font-size: 14px; }
+.rlist { display: flex; flex-direction: column; gap: 10px; }
+.rcard { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.rcard:hover { border-color: var(--accent); }
+.rcard .rscore { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: .9; color: var(--accent); }
+.rcard .rscore small { font-size: 16px; color: var(--muted); }
+.rcard .rinfo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rcard .rtitle { font-weight: 600; }
+.rcard .rsub { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.rcard .mini { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(25, 1fr); gap: 1px; height: 8px; }
+.mini i { background: var(--empty); border-radius: 1px; display: block; }
+.mini i.m-G { background: var(--hit); } .mini i.m-Y { background: var(--second); } .mini i.m-R { background: var(--miss); }
+.empty { border: 1px dashed var(--line); border-radius: 10px; padding: 18px 14px; color: var(--muted); }
+.empty b { color: var(--ink); }
+textarea.csv { width: 100%; min-height: 140px; font-family: var(--font-mono); font-size: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.scheme-pick { max-width: 220px; }
+.arrowcell { font-size: 17px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+@media (max-width: 420px) { .score b { font-size: 56px; } .tnum { font-size: 38px; } .peg { width: 26px; height: 26px; } }
+/* ---- v6.0: splash, sign in, profile, report ---- */
+.tabs { grid-template-columns: repeat(4, 1fr); }
+.tabs.two { grid-template-columns: repeat(2, 1fr); }
+.tabs.two button { font-size: 16px; white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo-sm { width: 34px; height: 34px; flex: none; display: block; }
+.logo-sm svg, .logo-lg svg { width: 100%; height: 100%; display: block; }
+.bar h1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; line-height: 1.05; }
+.ver { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: none; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 1px 7px; }
+.who { font-size: 12.5px; color: var(--muted); margin-top: 1px; overflow-wrap: anywhere; }
+.splash { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px)); text-align: center; cursor: pointer; }
+.splash-in { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+.logo-lg { width: 148px; height: 148px; max-width: 46vw; max-height: 46vw; }
+.splash h1 { font-family: var(--font-display); font-weight: 700; font-size: 46px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); line-height: 1; }
+.verpill { font-family: var(--font-mono); font-size: 14px; letter-spacing: .06em; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 99px; padding: 3px 14px; }
+.splash .tag { color: var(--muted); font-size: 15px; }
+.splash-foot { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+.splash-foot b { color: var(--ink); font-weight: 600; letter-spacing: .02em; }
+.authwrap { max-width: 520px; margin-inline: auto; padding-inline: 16px; padding-block: 22px 40px; }
+.auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.auth-brand .logo-sm { width: 46px; height: 46px; }
+.brand-name { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); line-height: 1; }
+.brand-ver { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 3px; }
+.auth-card { display: flex; flex-direction: column; gap: 14px; }
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-card .grid, .card .grid.flush { padding: 0; }
+.sec { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.hdr-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.btn.big { padding: 13px 18px; font-size: 16px; }
+.btn.block { width: 100%; }
+.msg { font-size: 14px; min-height: 1.3em; color: var(--muted); }
+.msg.bad { color: var(--miss); font-weight: 600; }
+.msg.good { color: var(--hit); font-weight: 600; }
+.field input.invalid, .field select.invalid { border-color: var(--miss); background: var(--miss-bg); }
+.field input[readonly] { background: var(--surface-2); color: var(--muted); }
+.card.block { display: flex; flex-direction: column; gap: 12px; }
+details.gun { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+details.gun > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+details.gun > summary::-webkit-details-marker { display: none; }
+details.gun .grid { padding: 0 14px 14px; }
+.share { display: flex; flex-direction: column; gap: 10px; }
+.share img { width: 100%; max-width: 420px; height: auto; border: 1px solid var(--line); border-radius: 8px; align-self: center; }
+.share.ready { border-color: var(--hit); }
+.claim { border: 1px dashed var(--warn); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+#phaseSetup, #phaseRecord { display: flex; flex-direction: column; gap: 14px; }
+.bar h1 { flex-wrap: nowrap; white-space: nowrap; font-size: 22px; }
+.bar { align-items: center; }
+.who .save { font-size: inherit; text-align: left; color: var(--muted); }
+.tabs button { font-size: 16px; letter-spacing: .03em; }
+.tabs.five { grid-template-columns: repeat(5, 1fr); }
+.tabs.five button { font-size: 14px; letter-spacing: .01em; }
+.tabs.one { grid-template-columns: 1fr; }
+.check.consent { align-items: flex-start; }
+.check.consent input { margin-top: 3px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile b { font-family: var(--font-display); font-size: 32px; line-height: 1; color: var(--accent); font-weight: 700; }
+.tile span { font-size: 11px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.an { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.an .tablewrap { min-width: 0; }
+.an h3 { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.mbar { display: inline-block; width: 44px; height: 8px; background: var(--empty); border-radius: 2px; vertical-align: middle; overflow: hidden; }
+.mbar i { display: block; height: 100%; background: var(--hit); }
+tr.admrow { cursor: pointer; }
+tr.admrow.on td { background: var(--surface-2); }
+.rcard.static { cursor: default; }
+.sub { display: block; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; font-weight: 400; }
+.an td, .an th { white-space: nowrap; }
+#admShooters td:first-child { white-space: normal; min-width: 130px; }
+.an td, .an th, #admShooters td, #admShooters th { padding: 6px 7px; }
+.note.bad { color: var(--miss); font-weight: 600; }
+</style>
+
+<div id="splash" class="splash" role="dialog" aria-label="TRAP LOGGER Ver 6.0">
+  <div class="splash-in">
+    <div class="logo-lg" id="logoLg"></div>
+    <h1>TRAP LOGGER</h1>
+    <div class="verpill">Ver 6.0</div>
+    <p class="tag">Olympic Trap round recorder</p>
+  </div>
+  <div class="splash-foot">
+    <span id="splashMsg">Script is not running. Open this file in Chrome or Safari, not in a file preview.</span>
+    <span>Developed by <b>Capri Studio</b></span>
+  </div>
+</div>
+
+<main id="authView" class="authwrap" hidden>
+  <div class="auth-brand">
+    <span class="logo-sm" id="logoAuth"></span>
+    <div><div class="brand-name">TRAP LOGGER</div><div class="brand-ver">Ver 6.0 &middot; Developed by Capri Studio</div></div>
+  </div>
+  <div class="card auth-card">
+    <nav class="tabs two" role="tablist" aria-label="Account">
+      <button id="authTab-login" role="tab" aria-selected="true" data-auth="login" type="button">Sign in</button>
+      <button id="authTab-register" role="tab" aria-selected="false" data-auth="register" type="button">Create account</button>
+    </nav>
+
+    <p id="authWait" class="note" role="status" hidden></p>
+    <form id="loginForm" novalidate>
+      <div class="field"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username" inputmode="email"></div>
+      <div class="field"><label for="lPw">Password</label><input id="lPw" type="password" autocomplete="current-password"></div>
+      <label class="check" for="lKeep"><input id="lKeep" type="checkbox"> Keep me signed in on this device</label>
+      <p id="lMsg" class="msg" role="alert"></p>
+      <button id="btnLogin" class="btn primary big block" type="submit">Sign in</button>
+    </form>
+
+    <form id="regForm" novalidate hidden>
+      <h2 class="sec">Your details</h2>
+      <div class="grid">
+        <div class="field wide"><label for="rName">Name</label><input id="rName" type="text" autocomplete="name"></div>
+        <div class="field"><label for="rDob">Date of birth</label><input id="rDob" type="date" autocomplete="bday"></div>
+        <div class="field"><label for="rEmail">Email</label><input id="rEmail" type="email" autocomplete="email" inputmode="email"></div>
+        <div class="field wide"><label for="rWeapon">Weapon make</label><input id="rWeapon" type="text" placeholder="e.g. Beretta DT11 12 gauge"></div>
+        <div class="field wide"><label for="rAmmo">Ammo</label><input id="rAmmo" type="text" placeholder="e.g. Eley VIP 24 g, no. 7.5"></div>
+        <div class="field"><label for="rCh1">Choke, 1st barrel</label><input id="rCh1" type="text" list="chokeList" placeholder="e.g. IC"></div>
+        <div class="field"><label for="rCh2">Choke, 2nd barrel</label><input id="rCh2" type="text" list="chokeList" placeholder="e.g. Modified"></div>
+      </div>
+      <h2 class="sec">Password</h2>
+      <div class="grid">
+        <div class="field"><label for="rPw">Password</label><input id="rPw" type="password" autocomplete="new-password" placeholder="6+ characters"></div>
+        <div class="field"><label for="rPw2">Repeat password</label><input id="rPw2" type="password" autocomplete="new-password"></div>
+      </div>
+      <label class="check consent" for="rConsent"><input id="rConsent" type="checkbox"> <span>I agree that Capri Studio can view my rounds and details to analyse performance.</span></label>
+      <label class="check" for="rKeep"><input id="rKeep" type="checkbox" checked> Keep me signed in on this device</label>
+      <p id="rMsg" class="msg" role="alert"></p>
+      <button id="btnRegister" class="btn primary big block" type="submit">Create account</button>
+    </form>
+  </div>
+  <div id="adminEnter" class="card block" hidden>
+    <h2 class="sec">Owner access</h2>
+    <p class="note">You opened this page as its owner. Open the data view to see every shooter's rounds.</p>
+    <button id="btnAdminEnter" class="btn block" type="button">Open owner data view</button>
+  </div>
+  <datalist id="chokeList"><option value="Cylinder"><option value="Skeet"><option value="Improved cylinder"><option value="Light modified"><option value="Modified"><option value="Improved modified"><option value="Light full"><option value="Full"><option value="Extra full"></datalist>
+</main>
+
+<main id="consentView" class="authwrap" hidden>
+  <div class="card block">
+    <h2 class="sec">Data use</h2>
+    <p>Capri Studio, the developer of TRAP LOGGER, views your rounds and details (name, email, date of birth, gun and ammo) to analyse shooting performance.</p>
+    <p class="note">You need to agree to keep using this account.</p>
+    <p id="cMsg" class="msg" role="alert"></p>
+    <div class="btns"><button id="btnConsent" class="btn primary" type="button">I agree and continue</button><button id="btnConsentOut" class="btn" type="button">Sign out</button></div>
+  </div>
+</main>
+
+<header class="top" id="appTop" hidden>
+  <div class="top-in">
+    <div class="bar">
+      <div class="brand">
+        <span class="logo-sm" id="logoTop"></span>
+        <div><h1>TRAP LOGGER <span class="ver">Ver 6.0</span></h1><div class="who"><span id="whoName"></span> <span class="dotsep">&middot;</span> <span id="saveState" class="save" aria-live="polite"></span></div></div>
+      </div>
+    </div>
+    <nav class="tabs" id="appTabs" role="tablist" aria-label="Sections">
+      <button id="tabBtn-record" role="tab" aria-selected="true" aria-controls="tab-record" data-tab="record" type="button">Record</button>
+      <button id="tabBtn-rounds" role="tab" aria-selected="false" aria-controls="tab-rounds" data-tab="rounds" type="button">Rounds</button>
+      <button id="tabBtn-schemes" role="tab" aria-selected="false" aria-controls="tab-schemes" data-tab="schemes" type="button">Schemes</button>
+      <button id="tabBtn-profile" role="tab" aria-selected="false" aria-controls="tab-profile" data-tab="profile" type="button">Profile</button>
+      <button id="tabBtn-admin" role="tab" aria-selected="false" aria-controls="tab-admin" data-tab="admin" type="button" hidden>Admin</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="appView" hidden>
+  <section id="tab-record" role="tabpanel" aria-labelledby="tabBtn-record">
+
+    <div id="phaseSetup">
+      <section class="card block" aria-label="Range data">
+        <h2 class="sec">Range data</h2>
+        <div class="grid flush">
+          <div class="field wide"><label for="fPlace">Range or club</label><input id="fPlace" type="text" placeholder="e.g. Range name, town"></div>
+          <div class="field"><label for="fField">Field</label><input id="fField" type="number" min="1" inputmode="numeric" placeholder="e.g. 7"></div>
+          <div class="field"><label for="fScheme">Scheme</label><select id="fScheme"></select></div>
+          <div class="field"><label for="fType">Type</label>
+            <select id="fType"><option>Training</option><option>Competition</option><option>Final</option></select></div>
+          <div class="field"><label for="fStartStn">First station</label>
+            <select id="fStartStn"><option value="">Pick at start</option><option value="1">Station 1</option><option value="2">Station 2</option><option value="3">Station 3</option><option value="4">Station 4</option><option value="5">Station 5</option></select></div>
+          <div class="field"><label for="fDate">Date</label><input id="fDate" type="date"></div>
+          <div class="field"><label for="fStart">Start time</label><input id="fStart" type="time"></div>
+          <div class="field"><label for="fSession">Session no.</label><input id="fSession" type="number" min="1" inputmode="numeric"></div>
+          <div class="field"><label for="fSid">Session ID</label><input id="fSid" type="text" placeholder="Auto"></div>
+          <div class="field wide"><label for="fNotes">Notes</label><textarea id="fNotes" rows="2"></textarea></div>
+        </div>
+      </section>
+
+      <section class="card cond" id="cond" aria-label="Conditions">
+        <div class="cond-head">
+          <h2 class="sec">Conditions</h2>
+          <button id="btnCond" class="btn" type="button">Same as last round</button>
+        </div>
+        <div class="grid flush">
+          <div class="field"><label for="fSky">Sky</label>
+            <select id="fSky"><option value="">Not set</option><option value="sun">Sun</option><option value="part">Part cloud</option><option value="overcast">Overcast</option><option value="rain">Rain</option></select></div>
+          <div class="field"><label for="fWind">Wind</label>
+            <select id="fWind"><option value="">Not set</option><option value="calm">Calm</option><option value="light">Light</option><option value="moderate">Moderate</option><option value="strong">Strong</option></select></div>
+          <div class="field"><label for="fTemp">Temp (&deg;C)</label><input id="fTemp" type="number" step="1" inputmode="decimal" placeholder="e.g. 22"></div>
+          <div class="field"><label for="fHum">Humidity (%)</label><input id="fHum" type="number" min="0" max="100" inputmode="numeric" placeholder="e.g. 49"></div>
+        </div>
+        <p id="condMsg" class="note" aria-live="polite">Type the values from your phone's weather app or your scoring app. Each round keeps its own conditions.</p>
+      </section>
+
+      <details id="gun" class="gun">
+        <summary><span class="sum-title">Gun and ammo</span><span id="gunSum" class="sum-text"></span></summary>
+        <div class="grid">
+          <div class="field wide"><label for="fWeapon">Weapon make</label><input id="fWeapon" type="text"></div>
+          <div class="field wide"><label for="fAmmo">Ammo</label><input id="fAmmo" type="text"></div>
+          <div class="field"><label for="fChoke1">Choke, 1st barrel</label><input id="fChoke1" type="text" list="chokeList"></div>
+          <div class="field"><label for="fChoke2">Choke, 2nd barrel</label><input id="fChoke2" type="text" list="chokeList"></div>
+        </div>
+      </details>
+
+      <p id="startErr" class="alert" role="alert" hidden></p>
+      <button id="btnStartRound" class="btn primary big block" type="button">Start round</button>
+    </div>
+
+    <div id="phaseRecord" hidden>
+      <div class="btns">
+        <button id="btnNew" class="btn primary" type="button">New round</button>
+        <button id="btnEditSetup" class="btn" type="button">Range data and conditions</button>
+        <button id="btnExportOne" class="btn" type="button">Export round CSV</button>
+        <button id="btnDelete" class="btn danger" type="button" hidden>Delete round</button>
+      </div>
+      <p id="setupSum" class="sum-text"></p>
+
+      <section class="card score-card" id="scoreCard" aria-label="Round scorecard"></section>
+      <section class="card entry" id="entry" aria-label="Record target"></section>
+      <div class="pattern" id="pattern"></div>
+
+      <section class="card share" id="sharePanel" aria-label="Share round" hidden>
+        <h2 class="sec">Share this round</h2>
+        <p id="shareText" class="note"></p>
+        <div class="btns">
+          <button id="btnImg" class="btn primary" type="button">Save as image</button>
+          <button id="btnPdf" class="btn primary" type="button">Save as PDF</button>
+          <button id="btnShare" class="btn" type="button" hidden>Share</button>
+        </div>
+        <p id="shareMsg" class="msg" aria-live="polite"></p>
+        <img id="reportPreview" alt="Scorecard preview" hidden>
+      </section>
+
+      <div class="tools">
+        <label for="chkTiming"><input id="chkTiming" type="checkbox"> Timing columns (add later)</label>
+        <span class="note">Green is a first-barrel hit. Yellow is a second-barrel hit. Confirm this against your scoring app.</span>
+      </div>
+      <div class="tablewrap"><table id="ledger" aria-label="Targets"></table></div>
+      <p id="exportMsg" class="note" aria-live="polite"></p>
+      <textarea id="csvFallback" class="csv" readonly hidden aria-label="CSV text"></textarea>
+    </div>
+  </section>
+
+  <section id="tab-rounds" role="tabpanel" aria-labelledby="tabBtn-rounds" hidden>
+    <div id="claimBox" class="claim" hidden>
+      <p id="claimText"></p>
+      <div class="btns"><button id="btnClaim" class="btn" type="button">Add them to my account</button></div>
+    </div>
+    <div class="btns">
+      <button id="btnExportAll" class="btn primary" type="button">Export all rounds CSV</button>
+    </div>
+    <p id="rTotals" class="rtotals"></p>
+    <div id="rList" class="rlist"></div>
+  </section>
+
+  <section id="tab-schemes" role="tabpanel" aria-labelledby="tabBtn-schemes" hidden>
+    <div class="field scheme-pick"><label for="schemeView">Scheme</label><select id="schemeView"></select></div>
+    <div class="tablewrap"><table id="schemeTable" aria-label="Scheme table"></table></div>
+    <p class="note">All targets fly 76 m &plusmn; 1 m. Heights are measured 10 m from the trap over level ground. In each station group the traps run right, straight, left. Source: ISSF Rulebook 9.20.2, Edition 2025 (second print 07/2026), effective 1 July 2026.</p>
+  </section>
+
+  <section id="tab-admin" role="tabpanel" aria-labelledby="tabBtn-admin" hidden>
+    <div class="hdr-row"><h2 class="sec">All shooters and rounds</h2><button id="btnAdminBack" class="btn" type="button" hidden>Back to sign in</button></div>
+    <p class="note">Only the owner of this page sees this tab. It covers every shooter who has an account here.</p>
+    <div class="tiles" id="admTiles"></div>
+    <div class="btns">
+      <button id="btnAdmRounds" class="btn primary" type="button">Export all rounds CSV</button>
+      <button id="btnAdmShooters" class="btn" type="button">Export shooters CSV</button>
+    </div>
+    <p id="admMsg" class="note" aria-live="polite"></p>
+    <textarea id="admFallback" class="csv" readonly hidden aria-label="CSV text"></textarea>
+    <div class="grid flush">
+      <div class="field"><label for="admShooter">Shooter</label><select id="admShooter"></select></div>
+      <div class="field"><label for="admScheme">Scheme</label><select id="admScheme"></select></div>
+    </div>
+    <h2 class="sec">Shooters</h2>
+    <div class="tablewrap"><table id="admShooters" aria-label="Shooters"></table></div>
+    <h2 class="sec">Analysis</h2>
+    <p class="note" id="admAnNote"></p>
+    <div id="admAnalysis" class="an"></div>
+    <h2 class="sec">Rounds</h2>
+    <div id="admRounds" class="rlist"></div>
+  </section>
+
+  <section id="tab-profile" role="tabpanel" aria-labelledby="tabBtn-profile" hidden>
+    <form id="profForm" class="card block" novalidate>
+      <h2 class="sec">Your details</h2>
+      <div class="grid flush">
+        <div class="field wide"><label for="pName">Name</label><input id="pName" type="text"></div>
+        <div class="field"><label for="pDob">Date of birth</label><input id="pDob" type="date"></div>
+        <div class="field"><label for="pEmail">Email (your login)</label><input id="pEmail" type="email" readonly></div>
+        <div class="field wide"><label for="pWeapon">Weapon make</label><input id="pWeapon" type="text"></div>
+        <div class="field wide"><label for="pAmmo">Ammo</label><input id="pAmmo" type="text"></div>
+        <div class="field"><label for="pCh1">Choke, 1st barrel</label><input id="pCh1" type="text" list="chokeList"></div>
+        <div class="field"><label for="pCh2">Choke, 2nd barrel</label><input id="pCh2" type="text" list="chokeList"></div>
+      </div>
+      <p id="pMsg" class="msg" aria-live="polite">New rounds start with these gun and ammo values. You can change them per round.</p>
+      <div class="btns"><button id="btnSaveProfile" class="btn primary" type="submit">Save details</button></div>
+    </form>
+
+    <form id="pwForm" class="card block" novalidate>
+      <h2 class="sec">Change password</h2>
+      <div class="grid flush">
+        <div class="field wide"><label for="pOld">Current password</label><input id="pOld" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="pNew">New password</label><input id="pNew" type="password" autocomplete="new-password"></div>
+        <div class="field"><label for="pNew2">Repeat new password</label><input id="pNew2" type="password" autocomplete="new-password"></div>
+      </div>
+      <p id="pwMsg" class="msg" aria-live="polite"></p>
+      <div class="btns"><button class="btn" type="submit">Change password</button></div>
+    </form>
+
+    <section class="card block">
+      <h2 class="sec">Account</h2>
+      <p id="acctText" class="note"></p>
+      <div class="btns"><button id="btnSignOut" class="btn" type="button">Sign out</button></div>
+      <p class="note">Passwords are stored as salted hashes, never as text. The login keeps each shooter's rounds apart inside this app. It does not replace device security, so use a password you do not use anywhere else.</p>
+      <p class="note">Data use: Capri Studio views your rounds and details to analyse shooting performance. You agreed to this when you created your account.</p>
+      <p class="note">TRAP LOGGER Ver 6.0. Developed by Capri Studio.</p>
+    </section>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- ISSF trap setting tables 1 to 10 (rulebook 9.20.2) ----------
+     Five station groups per scheme, three traps per group in the order right, straight, left.
+     Each trap: direction in degrees (R, L or 0) then height in metres at 10 m. */
+  var SCHEME_SRC = {
+    1: "30R 2.5,10R 1.5,30L 3|40R 1.7,5L 2,45L 2|45R 2,10L 3,45L 2.8|45R 2.3,10R 1.8,40L 1.6|30R 2,5L 1.5,35L 3",
+    2: "45R 2.3,10R 1.5,20L 2|45R 1.5,0 2,45L 2.8|25R 2,0 3,45L 1.5|35R 2.2,10R 2.4,40L 1.5|30R 2.8,10L 1.5,45L 2",
+    3: "45R 2.5,0 1.6,20L 3|35R 2.9,5L 1.8,45L 2|35R 2.5,10L 3,40L 3|40R 2,5L 2.5,30L 3|30R 2,0 1.8,30L 2.2",
+    4: "30R 1.5,0 3,20L 3|30R 2,10L 1.5,45L 2.2|25R 3,5L 1.5,15L 1.8|40R 2.8,5L 1.5,35L 2.2|15R 3,10R 3,40L 1.7",
+    5: "20R 1.8,0 3,25L 2.6|35R 3,0 1.6,35L 3|35R 2.3,5L 1.8,35L 2.3|40R 3,0 2.3,40L 2|25R 1.8,5L 2.5,45L 1.6",
+    6: "45R 1.9,0 2.8,30L 3|40R 1.5,0 1.6,40L 2|35R 2,0 3,45L 2|45R 2.3,5R 2,40L 3|25R 2.4,0 1.75,35L 1.8",
+    7: "40R 3,0 1.5,35L 1.5|45R 2,5R 2.2,45L 3|40R 1.5,5R 1.9,25L 2.6|20R 1.8,0 3,30L 3|35R 2.5,0 3,40L 2.2",
+    8: "40R 3,5L 3,15L 2.2|30R 2,5L 2,35L 1.8|40R 2,5R 1.5,35L 2.5|45R 1.5,5R 2,25L 3|15R 1.5,0 1.5,45L 1.6",
+    9: "30R 1.6,0 1.5,15L 2|20R 2.4,5L 3,35L 2|45R 2,5L 1.5,35L 1.5|45R 1.6,0 2.8,45L 2|25R 3,5R 1.5,20L 3",
+    10: "45R 2.25,0 1.75,25L 2|35R 1.8,0 3,40L 2.25|40R 3,5R 1.8,45L 3|45R 2,10L 2.5,35L 1.5|15R 1.8,10R 2,45L 1.5"
+  };
+  var SCHEMES = {};
+  Object.keys(SCHEME_SRC).forEach(function (k) {
+    var list = [];
+    SCHEME_SRC[k].split("|").forEach(function (g) {
+      g.split(",").forEach(function (t) {
+        var p = t.trim().split(" "), d = p[0], h = parseFloat(p[1]);
+        if (d === "0") list.push({ side: "C", angle: 0, signed: 0, h: h, label: "0" });
+        else {
+          var side = d.slice(-1), a = parseInt(d.slice(0, -1), 10);
+          list.push({ side: side, angle: a, signed: side === "R" ? a : -a, h: h, label: d });
+        }
+      });
+    });
+    SCHEMES[k] = list;
+  });
+
+  var DIROFF = { R: 0, S: 1, L: 2 };
+  var ARROW = { L: "↖", S: "↑", R: "↗" };
+  var DIRNAME = { L: "Left", S: "Straight", R: "Right" };
+  var RESNAME = { G: "1st", Y: "2nd", R: "Miss" };
+  var N = 25;
+  var QUOTA = { R: 2, S: 1, L: 2 };   /* per station over 25 targets */
+  var PRED_FROM = 15;                 /* predictions start after this many directions are recorded */
+
+  function trapFor(scheme, stn, d) {
+    var i = 3 * (stn - 1) + DIROFF[d];
+    var t = SCHEMES[scheme][i];
+    return { n: i + 1, side: t.side, angle: t.angle, signed: t.signed, h: t.h, label: t.label };
+  }
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function blank(ch) { return new Array(N + 1).join(ch); }
+  function setAt(str, i, ch) { return str.slice(0, i) + ch + str.slice(i + 1); }
+  function todayStr() { try { return new Date().toLocaleDateString("en-CA"); } catch (e) { return new Date().toISOString().slice(0, 10); } }
+  function fmtDate(s) {
+    if (!s) return "No date";
+    try { return new Date(s + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return s; }
+  }
+  function numOrNull(v) { if (v === "" || v == null) return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function newId() { return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function score(r) { var s = 0; for (var i = 0; i < N; i++) if (r.res[i] === "G" || r.res[i] === "Y") s++; return s; }
+  function counts(r) { var c = { G: 0, Y: 0, R: 0 }; for (var i = 0; i < N; i++) { var ch = r.res[i]; if (c[ch] != null) c[ch]++; } return c; }
+  function recorded(r) { var n = 0; for (var i = 0; i < N; i++) if (r.res[i] !== "-") n++; return n; }
+
+  /* ---------- station rule and prediction ----------
+     Each station gets exactly 2 right, 1 straight and 2 left over the 25 targets. */
+  /* the shooter picks the first station, then the rounds runs in order: 3, 4, 5, 1, 2, 3 ... */
+  function stnOf(r, i) { return ((r.startStn || 1) - 1 + i) % 5; }
+  function stationCounts(r, s, skip) {
+    var c = { R: 0, S: 0, L: 0 };
+    for (var i = 0; i < N; i++) { if (i === skip || stnOf(r, i) !== s) continue; var d = r.dirs[i]; if (c[d] != null) c[d]++; }
+    return c;
+  }
+  function stationOver(r, s) { var c = stationCounts(r, s, -1); return c.R > QUOTA.R || c.S > QUOTA.S || c.L > QUOTA.L; }
+  function isFull(r, i, d) { return stationCounts(r, stnOf(r, i), i)[d] >= QUOTA[d]; }
+  function fullMsg(i, d) {
+    var s = stnOf(cur, i) + 1, name = { R: "right", S: "straight", L: "left" }[d];
+    return "Wrong entry. Station " + s + " already has " + QUOTA[d] + " " + name + ". Each station gets 2 right, 1 straight and 2 left. Check the arrow on your scorecard, or fix an earlier target at this station.";
+  }
+  /* chance of each direction at target i: what its station still owes, shared over the open slots */
+  function dirOdds(r, i) {
+    var used = stationCounts(r, stnOf(r, i), i), rem = {}, sum = 0, p = {};
+    ["R", "S", "L"].forEach(function (d) { rem[d] = Math.max(0, QUOTA[d] - used[d]); sum += rem[d]; });
+    ["R", "S", "L"].forEach(function (d) { p[d] = sum ? rem[d] / sum : 0; });
+    return p;
+  }
+  function grade(p) { return p <= 0 ? 0 : p < 0.3 ? 1 : p < 0.5 ? 2 : p < 0.75 ? 3 : 4; }
+  /* session ID: date, start time and the shooter's initials */
+  function initials(name) {
+    var w = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return "USR";
+    return (w.length === 1 ? w[0].slice(0, 3) : w.slice(0, 3).map(function (x) { return x.charAt(0); }).join("")).toUpperCase();
+  }
+  function nowHM() { var d = new Date(), z = function (n) { return (n < 10 ? "0" : "") + n; }; return z(d.getHours()) + ":" + z(d.getMinutes()); }
+  function genSid(r) {
+    var base = (r.date || todayStr()).replace(/-/g, "") + "-" + ((r.startTime || "0000").replace(":", "")) + "-" + initials(r.shooter), id = base, n = 2;
+    while (rounds.some(function (x) { return x.id !== r.id && x.sessionId === id; })) id = base + "-" + n++;
+    return id;
+  }
+  function dirsRecorded(r) { var n = 0; for (var i = 0; i < N; i++) if (r.dirs[i] !== "-") n++; return n; }
+  function predict(r) {
+    var have = dirsRecorded(r), out = { have: have, ready: have >= PRED_FROM, items: [] };
+    if (!out.ready) return out;
+    for (var s = 0; s < 5; s++) {
+      var used = stationCounts(r, s, -1), unrec = [];
+      for (var i = 0; i < N; i++) if (stnOf(r, i) === s && r.dirs[i] === "-") unrec.push(i);
+      if (!unrec.length || stationOver(r, s)) continue;
+      var rem = { R: QUOTA.R - used.R, S: QUOTA.S - used.S, L: QUOTA.L - used.L };
+      unrec.forEach(function (i) {
+        var p = {}, exact = null;
+        ["L", "S", "R"].forEach(function (d) { p[d] = rem[d] / unrec.length; if (p[d] >= 0.999) exact = d; });
+        out.items.push({ i: i, stn: s + 1, p: p, exact: exact });
+      });
+    }
+    out.items.sort(function (a, b) { return a.i - b.i; });
+    return out;
+  }
+  function oddsText(it) {
+    return ["L", "S", "R"].filter(function (d) { return it.p[d] > 0.001; }).map(function (d) { return ARROW[d] + " " + DIRNAME[d] + " " + Math.round(it.p[d] * 100) + "%"; }).join(" or ");
+  }
+
+  /* ---------- app info and logo ---------- */
+  var APP = { name: "TRAP LOGGER", ver: "6.0", by: "Capri Studio" };
+  var LOGO_SVG = '<svg viewBox="0 0 100 100" role="img" aria-label="TRAP LOGGER logo"><circle cx="50" cy="50" r="46" fill="#14465F"/><circle cx="50" cy="50" r="35" fill="none" stroke="#FFFFFF" stroke-width="3"/><circle cx="50" cy="50" r="23" fill="#E8741A"/><circle cx="50" cy="50" r="9" fill="#FFFFFF"/><path d="M6 50H26M74 50H94M50 6V26M50 74V94" stroke="#E3B21F" stroke-width="4" stroke-linecap="round" fill="none"/></svg>';
+
+  /* ---------- password hashing ----------
+     PBKDF2 (SHA-256, 150000 rounds) when the browser offers it, else salted SHA-256 repeated 20000 times. */
+  var K256 = (function () {
+    var k = [], p = 2, n = 0;
+    while (n < 64) { var ok = true; for (var d = 2; d * d <= p; d++) if (p % d === 0) { ok = false; break; } if (ok) { k.push((Math.pow(p, 1 / 3) * 4294967296) | 0); n++; } p++; }
+    return k;
+  })();
+  function sha256(msg) {
+    var h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    var l = msg.length, nb = ((l + 9 + 63) >> 6) << 6, b = new Uint8Array(nb), w = new Array(64), i, o;
+    b.set(msg); b[l] = 0x80;
+    var bits = l * 8; b[nb - 4] = (bits >>> 24) & 255; b[nb - 3] = (bits >>> 16) & 255; b[nb - 2] = (bits >>> 8) & 255; b[nb - 1] = bits & 255;
+    function ror(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (o = 0; o < nb; o += 64) {
+      for (i = 0; i < 16; i++) w[i] = (b[o + 4 * i] << 24) | (b[o + 4 * i + 1] << 16) | (b[o + 4 * i + 2] << 8) | b[o + 4 * i + 3];
+      for (i = 16; i < 64; i++) {
+        var s0 = ror(w[i - 15], 7) ^ ror(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = ror(w[i - 2], 17) ^ ror(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      var a = h[0], bb = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+      for (i = 0; i < 64; i++) {
+        var S1 = ror(e, 6) ^ ror(e, 11) ^ ror(e, 25), ch = (e & f) ^ (~e & g), t1 = (hh + S1 + ch + K256[i] + w[i]) | 0;
+        var S0 = ror(a, 2) ^ ror(a, 13) ^ ror(a, 22), mj = (a & bb) ^ (a & c) ^ (bb & c), t2 = (S0 + mj) | 0;
+        hh = g; g = f; f = e; e = (d + t1) | 0; d = c; c = bb; bb = a; a = (t1 + t2) | 0;
+      }
+      h[0] = (h[0] + a) | 0; h[1] = (h[1] + bb) | 0; h[2] = (h[2] + c) | 0; h[3] = (h[3] + d) | 0; h[4] = (h[4] + e) | 0; h[5] = (h[5] + f) | 0; h[6] = (h[6] + g) | 0; h[7] = (h[7] + hh) | 0;
+    }
+    var out = new Uint8Array(32);
+    for (i = 0; i < 8; i++) { out[4 * i] = h[i] >>> 24; out[4 * i + 1] = (h[i] >>> 16) & 255; out[4 * i + 2] = (h[i] >>> 8) & 255; out[4 * i + 3] = h[i] & 255; }
+    return out;
+  }
+  function bytesHex(u) { var s = ""; for (var i = 0; i < u.length; i++) s += (u[i] < 16 ? "0" : "") + u[i].toString(16); return s; }
+  function hexBytes(h) { var u = new Uint8Array(h.length / 2); for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(2 * i, 2), 16); return u; }
+  function utf8(s) { try { return new TextEncoder().encode(s); } catch (e) { var u = unescape(encodeURIComponent(s)), a = new Uint8Array(u.length); for (var i = 0; i < u.length; i++) a[i] = u.charCodeAt(i); return a; } }
+  function cat(a, b) { var u = new Uint8Array(a.length + b.length); u.set(a); u.set(b, a.length); return u; }
+  function randomHex(n) {
+    var a = new Uint8Array(n);
+    try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); }
+    return bytesHex(a);
+  }
+  function hasSubtle() { try { return !!(window.crypto && crypto.subtle && crypto.subtle.importKey && crypto.subtle.deriveBits); } catch (e) { return false; } }
+  function hashPw(pw, saltHex, alg) {
+    var salt = hexBytes(saltHex), pwb = utf8(pw);
+    if (alg === "p1") {
+      if (!hasSubtle()) return Promise.reject(new Error("no-subtle"));
+      return crypto.subtle.importKey("raw", pwb, "PBKDF2", false, ["deriveBits"]).then(function (k) {
+        return crypto.subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: 150000, hash: "SHA-256" }, k, 256);
+      }).then(function (bits) { return bytesHex(new Uint8Array(bits)); });
+    }
+    return new Promise(function (res) {
+      setTimeout(function () {
+        var h = sha256(cat(salt, pwb));
+        for (var i = 0; i < 20000; i++) h = sha256(cat(h, salt));
+        res(bytesHex(h));
+      }, 0);
+    });
+  }
+
+  /* ---------- state ---------- */
+  var K = { prefs: "trap-logger-prefs-v6", rounds: "trap-logger-rounds-v6", shooters: "trap-logger-shooters-v6", session: "trap-logger-session-v6", old: "trap-round-log-rounds-v1" };
+  var db = null, dl = null, storeReady = false, isAdmin = false, adminOnly = false, pendingConsent = null;
+  var shooters = [], allRounds = [], rounds = [], unowned = [], me = null;
+  var cur, idx = 0, tab = "record", phase = "setup", started = false, timingPref = null, savedOnce = false, entryWarn = "", sidAuto = true, startAuto = true;
+  var saveTimer = null, saving = false, dirty = false, delTimer = null;
+
+  function lget(k, fb) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
+  function lset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } }
+  function ldel(k) { try { localStorage.removeItem(k); } catch (e) { /* storage unavailable */ } }
+
+  function loadPrefs() { var all = lget(K.prefs, {}) || {}; return (me && all[me.id]) || {}; }
+  function savePrefs() {
+    if (!me || !cur) return;
+    var all = lget(K.prefs, {}) || {};
+    all[me.id] = { scheme: cur.scheme, type: cur.type, field: cur.field, place: cur.place };
+    lset(K.prefs, all);
+  }
+  function newRound() {
+    var p = loadPrefs(), m = me || {};
+    var r = {
+      id: newId(), uid: m.id || "", createdAt: new Date().toISOString(), date: todayStr(), startTime: nowHM(), startStn: null, session: 1, sessionId: "",
+      type: p.type || "Training", scheme: p.scheme && SCHEMES[p.scheme] ? p.scheme : 2, field: p.field == null ? null : p.field,
+      sky: "", wind: "", temp: null, hum: null, shooter: m.name || "", place: p.place || "", notes: "",
+      weapon: m.weapon || "", ammo: m.ammo || "", choke1: m.choke1 || "", choke2: m.choke2 || "", ver: APP.ver,
+      dirs: blank("-"), res: blank("-"), t1: new Array(N).fill(null), t2: new Array(N).fill(null)
+    };
+    r.sessionId = genSid(r);
+    return r;
+  }
+  function norm(id, d) {
+    var r = newRound();
+    r.id = id; r.uid = ""; r.startTime = ""; r.sessionId = ""; r.startStn = 1; r.shooter = ""; r.place = ""; r.weapon = ""; r.ammo = ""; r.choke1 = ""; r.choke2 = ""; r.ver = "";
+    ["uid", "createdAt", "date", "startTime", "sessionId", "type", "sky", "wind", "shooter", "place", "notes", "weapon", "ammo", "choke1", "choke2", "ver"].forEach(function (k) { if (typeof d[k] === "string") r[k] = d[k]; });
+    ["session", "scheme", "field", "temp", "hum"].forEach(function (k) { if (typeof d[k] === "number") r[k] = d[k]; else if (d[k] === null) r[k] = null; });
+    if (typeof d.startStn === "number" && d.startStn >= 1 && d.startStn <= 5) r.startStn = d.startStn;
+    if (!SCHEMES[r.scheme]) r.scheme = 2;
+    if (typeof d.dirs === "string" && d.dirs.length === N) r.dirs = d.dirs;
+    if (typeof d.res === "string" && d.res.length === N) r.res = d.res;
+    ["t1", "t2"].forEach(function (k) {
+      if (Array.isArray(d[k])) r[k] = d[k].slice(0, N).concat(new Array(Math.max(0, N - d[k].length)).fill(null)).map(function (v) { return typeof v === "number" ? v : null; });
+    });
+    return r;
+  }
+  function shooterNorm(id, d) {
+    var s = { id: id };
+    ["name", "dob", "email", "emailLower", "alg", "salt", "hash", "weapon", "ammo", "choke1", "choke2", "createdAt", "consent", "ver"].forEach(function (k) { s[k] = typeof d[k] === "string" ? d[k] : ""; });
+    return s;
+  }
+  function shooterDoc(s) { var d = {}; Object.keys(s).forEach(function (k) { if (k !== "id") d[k] = s[k]; }); return d; }
+  function hasData(r) {
+    for (var i = 0; i < N; i++) if (r.dirs[i] !== "-" || r.res[i] !== "-" || r.t1[i] != null || r.t2[i] != null) return true;
+    return false;
+  }
+  function incomplete(i) { return cur.dirs[i] === "-" || cur.res[i] === "-"; }
+  function nextIncomplete(from) {
+    for (var k = 1; k <= N; k++) { var j = (from + k) % N; if (incomplete(j)) return j; }
+    return from;
+  }
+  function firstIncomplete() { for (var i = 0; i < N; i++) if (incomplete(i)) return i; return 0; }
+  function showTiming() {
+    if (timingPref != null) return timingPref;
+    for (var i = 0; i < N; i++) if (cur.t1[i] != null || cur.t2[i] != null) return true;
+    return false;
+  }
+
+  /* ---------- storage: shared database when offered, this device otherwise ---------- */
+  function setStatus(t) { $("saveState").textContent = t; }
+  function toDoc(r) {
+    return {
+      v: 2, ver: APP.ver, uid: r.uid, createdAt: r.createdAt, updatedAt: new Date().toISOString(), date: r.date, startTime: r.startTime, startStn: r.startStn || 1, session: r.session, sessionId: r.sessionId,
+      type: r.type, scheme: r.scheme, field: r.field, sky: r.sky, wind: r.wind, temp: r.temp, hum: r.hum,
+      shooter: r.shooter, place: r.place, notes: r.notes, weapon: r.weapon, ammo: r.ammo, choke1: r.choke1, choke2: r.choke2,
+      dirs: r.dirs, res: r.res, t1: r.t1, t2: r.t2
+    };
+  }
+  function applyRounds() {
+    rounds = me ? allRounds.filter(function (r) { return r.uid === me.id; }) : [];
+    unowned = allRounds.filter(function (r) { return !r.uid; });
+  }
+  function upsertBy(list, item) {
+    for (var i = 0; i < list.length; i++) if (list[i].id === item.id) { list[i] = item; return; }
+    list.push(item);
+  }
+  function writeLocalRounds() { lset(K.rounds, allRounds.map(function (r) { return Object.assign({ id: r.id }, toDoc(r)); })); }
+  function putRound(r) {
+    if (db) return db.collection("rounds").doc(r.id).set(toDoc(r));
+    upsertBy(allRounds, clone(r)); writeLocalRounds(); applyRounds();
+    return Promise.resolve();
+  }
+  function removeRound(id) {
+    if (db) return db.collection("rounds").doc(id).delete();
+    allRounds = allRounds.filter(function (r) { return r.id !== id; }); writeLocalRounds(); applyRounds();
+    return Promise.resolve();
+  }
+  function putShooter(s) {
+    if (db) return db.collection("shooters").doc(s.id).set(shooterDoc(s));
+    upsertBy(shooters, clone(s)); lset(K.shooters, shooters.map(function (x) { return Object.assign({ id: x.id }, shooterDoc(x)); }));
+    return Promise.resolve();
+  }
+  function queueSave() {
+    savePrefs();
+    if (!hasData(cur)) { setStatus("New round. Saves after your first target."); return; }
+    dirty = true; setStatus("Saving...");
+    clearTimeout(saveTimer); saveTimer = setTimeout(flush, 500);
+  }
+  function flush() {
+    saveTimer = null;
+    if (saving) { saveTimer = setTimeout(flush, 200); return; }
+    if (!dirty) return;
+    dirty = false; saving = true;
+    var r = cur, id = r.id;
+    putRound(r).then(function () {
+      savedOnce = true;
+      if (cur && cur.id === id) { setStatus(db ? "Saved" : "Saved on this device only"); $("btnDelete").hidden = false; }
+      if (!db) renderRounds();
+    }).catch(function () {
+      dirty = true; setStatus("Not saved. Change a target to try again.");
+    }).then(function () { saving = false; if (dirty && !saveTimer) flush(); });
+  }
+
+  /* ---------- rendering ---------- */
+  function stripHtml(r, withActive) {
+    var arrows = "", stns = "", bars = "";
+    for (var i = 0; i < N; i++) {
+      var d = r.dirs[i], c = r.res[i];
+      arrows += "<span" + (d === "-" ? "" : ' class="d' + d + '"') + ">" + (d === "-" ? "·" : ARROW[d]) + "</span>";
+      stns += "<span>" + (stnOf(r, i) + 1) + "</span>";
+      bars += '<button type="button" data-i="' + i + '" class="' + (c !== "-" ? c : "") + (withActive && i === idx ? " on" : "") + '" aria-label="Target ' + (i + 1) + ", station " + (stnOf(r, i) + 1) + (c === "-" ? ", empty" : ", " + RESNAME[c]) + '"></button>';
+    }
+    return '<div class="strip-wrap"><div class="arrows" aria-hidden="true">' + arrows + '</div><div class="strip">' + bars + '</div><div class="stns" aria-hidden="true">' + stns + "</div></div>";
+  }
+  function condLine(r) {
+    var sky = { sun: "Sun", part: "Part cloud", overcast: "Overcast", rain: "Rain" }[r.sky] || "", bits = [];
+    if (sky) bits.push(sky);
+    if (r.temp != null) bits.push(r.temp + "°C");
+    if (r.hum != null) bits.push(r.hum + "% humidity");
+    if (r.wind) bits.push(r.wind + " wind");
+    return bits.join(" · ");
+  }
+  function renderCard() {
+    var c = counts(cur), bits = condLine(cur) ? [condLine(cur)] : [];
+    $("scoreCard").innerHTML =
+      '<div class="score-top"><div class="score-meta"><div class="line1">Trap · Scheme ' + cur.scheme + "</div>" +
+      '<div class="line2">' + esc(cur.type) + " · Field " + (cur.field == null ? "–" : esc(cur.field)) + (cur.sessionId ? " · ID " + esc(cur.sessionId) : "") + "</div>" +
+      '<div class="line2">' + esc(bits.join(" · ")) + "</div></div>" +
+      '<div class="score" aria-label="Score ' + score(cur) + ' of 25"><b>' + score(cur) + "</b><small>/25</small></div></div>" +
+      stripHtml(cur, true) +
+      '<div class="counts"><span><i class="dot G"></i>' + c.G + " first barrel</span><span><i class=\"dot Y\"></i>" + c.Y + " second barrel</span><span><i class=\"dot R\"></i>" + c.R + " miss</span><span>" + recorded(cur) + " of 25 recorded</span></div>";
+  }
+  function renderEntry() {
+    var i = idx, stn = stnOf(cur, i) + 1, d = cur.dirs[i], rs = cur.res[i];
+    var pegs = "";
+    for (var s = 1; s <= 5; s++) pegs += '<span class="peg' + (s === stn ? " on" : "") + '" aria-hidden="true">' + s + "</span>";
+    var dirs = "";
+    var odds = dirOdds(cur, i);
+    ["L", "S", "R"].forEach(function (k) {
+      var t = trapFor(cur.scheme, stn, k), full = d !== k && isFull(cur, i, k), g = grade(odds[k]);
+      dirs += '<button type="button" class="choice dir g' + g + (full ? " full" : "") + '" data-dir="' + k + '" aria-pressed="' + (d === k) + '"' + (full ? ' aria-disabled="true"' : "") + ">" +
+        '<span class="big" aria-hidden="true">' + ARROW[k] + '</span><span class="name">' + DIRNAME[k] + '</span><span class="pct">' + (full ? "full" : Math.round(odds[k] * 100) + "%") + "</span>" +
+        '<span class="sub">T' + t.n + " · " + t.label + "<br>" + t.h.toFixed(2) + " m</span></button>";
+    });
+    var ress = "";
+    [["G", "Hit", "1st barrel"], ["Y", "Hit", "2nd barrel"], ["R", "Miss", "no hit"]].forEach(function (x) {
+      ress += '<button type="button" class="choice res ' + x[0] + '" data-res="' + x[0] + '" aria-pressed="' + (rs === x[0]) + '">' +
+        '<span class="big">' + x[1] + '</span><span class="sub">' + x[2] + "</span></button>";
+    });
+    var sum = "Pick a direction to see the trap.";
+    if (d !== "-") { var t2 = trapFor(cur.scheme, stn, d); sum = "<b>Trap " + t2.n + "</b> · " + t2.label + " · " + t2.h.toFixed(2) + " m at 10 m"; }
+    if (cur.startStn == null && !hasData(cur)) {
+      var sb = ""; for (var q = 1; q <= 5; q++) sb += '<button type="button" class="choice startpick" data-start="' + q + '"><span class="big">' + q + '</span><span class="name">Station</span></button>';
+      $("entry").innerHTML = '<div><div class="eyebrow">Step 1</div><div class="tnum" style="font-size:24px">Which station do you start on?</div></div>' +
+        '<div class="choices five">' + sb + '</div><p class="note">The round then runs in order. Start on 3 and you shoot 3, 4, 5, 1, 2, then 3 again. You cannot change the first station after target 1 unless you clear it.</p>';
+      return;
+    }
+    var all = true; for (var j = 0; j < N; j++) if (incomplete(j)) all = false;
+    var hint = "", pr = predict(cur);
+    if (d === "-" && pr.ready) {
+      var it = pr.items.filter(function (x) { return x.i === i; })[0];
+      if (it) {
+        if (it.exact) { var te = trapFor(cur.scheme, stn, it.exact); hint = '<div class="hint">Expected <b>' + ARROW[it.exact] + " " + DIRNAME[it.exact] + '</b> <span class="exacttag">exact</span> · Trap ' + te.n + " · " + te.label + " · " + te.h.toFixed(2) + " m</div>"; }
+        else hint = '<div class="hint">Expected <b>' + oddsText(it) + "</b></div>";
+      }
+    }
+    $("entry").innerHTML =
+      '<div class="entry-head"><div><div class="eyebrow">Target</div><div class="tnum">' + (i + 1) + "<small> / 25</small></div></div>" +
+      '<div><div class="pegs">' + pegs + '</div><div class="stn-label">Station ' + stn + "</div></div></div>" +
+      (entryWarn ? '<div class="alert" role="alert">' + esc(entryWarn) + "</div>" : "") + hint +
+      '<div><div class="eyebrow" style="margin-bottom:2px">Direction on your scorecard</div><p class="note" style="margin-bottom:6px">Darker color means a higher chance at this station.</p><div class="choices">' + dirs + "</div></div>" +
+      '<div><div class="eyebrow" style="margin-bottom:6px">Result</div><div class="choices">' + ress + "</div></div>" +
+      '<div class="entry-foot"><span class="trap-sum">' + sum + '</span><span class="btns">' +
+      '<button type="button" class="btn" id="btnPrev">Previous</button><button type="button" class="btn" id="btnNext">Next</button>' +
+      '<button type="button" class="btn" id="btnClear">Clear target</button></span></div>' +
+      (all ? '<div class="done">All 25 targets recorded. Score ' + score(cur) + " of 25. The round is saved. Save or share the scorecard below.</div>" : "");
+  }
+  function renderPattern() {
+    var any = false, chips = "";
+    for (var s = 0; s < 5; s++) {
+      var c = stationCounts(cur, s, -1), n = c.R + c.S + c.L;
+      if (n) any = true;
+      var over = stationOver(cur, s), warn = n === 5 && !(c.R === 2 && c.S === 1 && c.L === 2);
+      chips += '<div class="pchip' + (over || warn ? " bad" : "") + '">St ' + (s + 1) + " · <b>" + c.R + "R " + c.S + "S " + c.L + "L</b>" + (over || warn ? " wrong entry" : "") + "</div>";
+    }
+    var html = any
+      ? '<div class="eyebrow">Station check</div><div class="chips">' + chips + '</div><p class="note">Each station gets 2 right, 1 straight and 2 left over 25 targets. A station marked wrong entry has a bad arrow. Tap its row in the list below to fix it.</p>'
+      : "";
+    var pr = predict(cur);
+    if (any && !pr.ready) {
+      html += '<p class="note">Prediction starts after ' + PRED_FROM + " targets. " + (PRED_FROM - pr.have) + " to go.</p>";
+    } else if (pr.ready && pr.items.length) {
+      var pc = pr.items.map(function (it) {
+        if (it.exact) { var t = trapFor(cur.scheme, it.stn, it.exact); return '<div class="pchip pred exact"><span>#' + (it.i + 1) + " · St " + it.stn + ' · <b>' + ARROW[it.exact] + " " + DIRNAME[it.exact] + '</b> <span class="exacttag">exact</span></span><span class="pt">T' + t.n + " · " + t.label + " · " + t.h.toFixed(2) + " m</span></div>"; }
+        return '<div class="pchip pred"><span>#' + (it.i + 1) + " · St " + it.stn + '</span><span class="odds">' + oddsText(it) + "</span></div>";
+      }).join("");
+      html += '<div class="eyebrow">Prediction for the remaining ' + pr.items.length + " targets</div><div class=\"chips\">" + pc + '</div><p class="note">Each station still owes its missing arrows, so the odds come from what is left. After 20 targets every remaining target is exact.</p>';
+    }
+    $("pattern").innerHTML = html;
+  }
+  function renderTable() {
+    var tm = showTiming();
+    $("chkTiming").checked = tm;
+    var h = "<thead><tr><th class=\"num\">#</th><th class=\"num\">Stn</th><th>Dir</th><th>Trap</th><th>Angle</th><th class=\"num\">Height</th><th>Result</th>" +
+      (tm ? '<th class="num">1st shot s</th><th class="num">2nd shot s</th>' : "") + "</tr></thead><tbody>";
+    for (var i = 0; i < N; i++) {
+      var d = cur.dirs[i], rs = cur.res[i], stn = stnOf(cur, i) + 1, tr = "–", an = "–", ht = "–";
+      if (d !== "-") { var t = trapFor(cur.scheme, stn, d); tr = "T" + t.n; an = t.label; ht = t.h.toFixed(2); }
+      h += '<tr class="row' + (i === idx ? " on" : "") + '" data-i="' + i + '"><td class="num mono">' + (i + 1) + '</td><td class="num mono">' + stn + '</td><td class="arrowcell' + (d !== "-" && stationOver(cur, stnOf(cur, i)) ? " badcell" : "") + '">' + (d === "-" ? "–" : ARROW[d]) + '</td><td class="mono">' + tr + '</td><td class="mono">' + an + '</td><td class="num mono">' + ht + "</td><td>" +
+        (rs === "-" ? "–" : '<span class="chip"><i class="dot ' + rs + '"></i>' + RESNAME[rs] + "</span>") + "</td>";
+      if (tm) {
+        h += '<td class="num"><input class="tin" id="t1_' + i + '" data-i="' + i + '" data-k="t1" inputmode="decimal" value="' + (cur.t1[i] == null ? "" : cur.t1[i]) + '" aria-label="First shot seconds, target ' + (i + 1) + '"></td>' +
+          '<td class="num"><input class="tin" id="t2_' + i + '" data-i="' + i + '" data-k="t2" inputmode="decimal" value="' + (cur.t2[i] == null ? "" : cur.t2[i]) + '" aria-label="Second shot seconds, target ' + (i + 1) + '"></td>';
+      }
+      h += "</tr>";
+    }
+    $("ledger").innerHTML = h + "</tbody>";
+  }
+  function renderRecord() { renderCard(); renderEntry(); renderPattern(); renderTable(); renderShare(); $("btnDelete").hidden = !(savedOnce || rounds.some(function (r) { return r.id === cur.id; })); }
+  function lockStart() { $("fStartStn").disabled = hasData(cur); }
+  function refreshAfterChange() { renderCard(); renderEntry(); renderPattern(); renderTable(); renderShare(); lockStart(); queueSave(); }
+
+  function sortedRounds() { return rounds.slice().sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0; }); }
+  function renderRounds() {
+    renderClaim();
+    var list = sortedRounds();
+    if (!storeReady) { $("rTotals").textContent = "Loading rounds..."; $("rList").innerHTML = ""; return; }
+    if (!list.length) {
+      $("rTotals").textContent = "";
+      $("rList").innerHTML = '<div class="empty"><b>No saved rounds yet.</b> Record a round on the Record tab. It appears here with its score and a strip of the 25 targets.</div>';
+      return;
+    }
+    var tg = 0, hits = 0;
+    list.forEach(function (r) { tg += recorded(r); hits += score(r); });
+    $("rTotals").textContent = list.length + (list.length === 1 ? " round" : " rounds") + " · " + tg + " targets · " + (tg ? (100 * hits / tg).toFixed(1) : "0.0") + "% hit";
+    $("rList").innerHTML = list.map(function (r) {
+      var mini = ""; for (var i = 0; i < N; i++) mini += '<i class="m-' + r.res[i] + '"></i>';
+      return '<button type="button" class="rcard" data-id="' + esc(r.id) + '"><span class="rscore">' + score(r) + "<small>/25</small></span>" +
+        '<span class="rinfo"><span class="rtitle">' + esc(fmtDate(r.date)) + (r.startTime ? " · " + esc(r.startTime) : "") + (r.sessionId ? " · ID " + esc(r.sessionId) : "") + "</span>" +
+        '<span class="rsub">Scheme ' + r.scheme + " · Field " + (r.field == null ? "–" : esc(r.field)) + " · Start St " + r.startStn + " · " + esc(r.type) + " · " + recorded(r) + " targets" + (r.shooter ? " · " + esc(r.shooter) : "") + "</span>" +
+        (condLine(r) ? '<span class="rsub">' + esc(condLine(r)) + "</span>" : "") + "</span>" +
+        '<span class="mini" aria-hidden="true">' + mini + "</span></button>";
+    }).join("");
+  }
+  function renderSchemeTable() {
+    var s = Number($("schemeView").value) || 2, list = SCHEMES[s], h = "<thead><tr><th>Station</th><th>Trap</th><th>Position</th><th>Direction</th><th>Arrow</th><th class=\"num\">Height at 10 m</th></tr></thead><tbody>";
+    var pos = ["Right", "Straight", "Left"], arr = ["R", "S", "L"];
+    list.forEach(function (t, i) {
+      h += "<tr><td class=\"mono\">" + (i % 3 === 0 ? "Station " + (i / 3 + 1) : "") + '</td><td class="mono">T' + (i + 1) + "</td><td>" + pos[i % 3] + '</td><td class="mono">' + t.label + '</td><td class="arrowcell">' + ARROW[arr[i % 3]] + '</td><td class="num mono">' + t.h.toFixed(2) + " m</td></tr>";
+    });
+    $("schemeTable").innerHTML = h + "</tbody>";
+  }
+
+  function renderSetupSum() {
+    var bits = [];
+    if (cur.place) bits.push(cur.place);
+    bits.push("Scheme " + cur.scheme, "Field " + (cur.field == null ? "–" : cur.field), cur.type, fmtDate(cur.date) + (cur.startTime ? " " + cur.startTime : ""));
+    if (cur.startStn) bits.push("Start St " + cur.startStn);
+    $("setupSum").textContent = bits.join(" · ");
+    var g = [cur.weapon, cur.ammo, [cur.choke1, cur.choke2].filter(Boolean).join(" / ")].filter(Boolean).join(" · ");
+    $("gunSum").textContent = g || "Not set";
+  }
+  function renderCond() {
+    $("fSky").value = cur.sky; $("fWind").value = cur.wind;
+    $("fTemp").value = cur.temp == null ? "" : cur.temp; $("fHum").value = cur.hum == null ? "" : cur.hum;
+  }
+  function renderMeta() {
+    $("fDate").value = cur.date; $("fStart").value = cur.startTime || ""; $("fStartStn").value = cur.startStn == null ? "" : String(cur.startStn);
+    $("fSession").value = cur.session == null ? "" : cur.session; $("fSid").value = cur.sessionId;
+    $("fType").value = cur.type; $("fScheme").value = String(cur.scheme); $("fField").value = cur.field == null ? "" : cur.field;
+    $("fPlace").value = cur.place; $("fNotes").value = cur.notes;
+    $("fWeapon").value = cur.weapon; $("fAmmo").value = cur.ammo; $("fChoke1").value = cur.choke1; $("fChoke2").value = cur.choke2;
+    renderCond(); renderSetupSum(); lockStart();
+    ["fPlace", "fField", "fSky", "fTemp", "fHum"].forEach(function (id) { $(id).classList.remove("invalid"); });
+    $("startErr").hidden = true;
+  }
+  function canShareFiles() {
+    try { return !!(navigator.canShare && navigator.canShare({ files: [new File(["x"], "a.png", { type: "image/png" })] })); } catch (e) { return false; }
+  }
+  function renderShare() {
+    var n = recorded(cur), box = $("sharePanel");
+    box.hidden = n < 1;
+    if (n < 1) return;
+    var done = n === N;
+    box.classList.toggle("ready", done);
+    $("shareText").textContent = done
+      ? "Round complete. Score " + score(cur) + " of 25. Save the scorecard as an image or a PDF."
+      : n + " of 25 targets recorded. Finish the round first, or save a partial scorecard now.";
+    $("btnShare").hidden = !canShareFiles();
+  }
+  function renderProfile() {
+    if (!me) return;
+    $("pName").value = me.name; $("pDob").value = me.dob; $("pEmail").value = me.email;
+    $("pWeapon").value = me.weapon; $("pAmmo").value = me.ammo; $("pCh1").value = me.choke1; $("pCh2").value = me.choke2;
+    $("acctText").textContent = "Signed in as " + me.name + " (" + me.email + ").";
+    $("whoName").textContent = me.name;
+  }
+  function renderClaim() {
+    var box = $("claimBox");
+    if (!me || !unowned.length) { box.hidden = true; return; }
+    box.hidden = false;
+    $("claimText").textContent = unowned.length + (unowned.length === 1 ? " round was" : " rounds were") + " recorded before accounts existed and belong to no shooter. Add them to your account to see them in your list.";
+  }
+
+  /* ---------- CSV ---------- */
+  function csvCell(v) { var s = v == null ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function shooterById(id) { for (var i = 0; i < shooters.length; i++) if (shooters[i].id === id) return shooters[i]; return null; }
+  function csvFor(list, admin) {
+    var head = ["round_id", "shooter_id", "date", "start_time", "start_station", "session", "session_id", "round_type", "scheme", "field", "sky", "wind", "temp_c", "humidity_pct", "shooter"];
+    if (admin) head.push("shooter_email");
+    head = head.concat(["place", "weapon", "ammo", "choke_1st", "choke_2nd", "seq", "station", "direction", "trap", "side", "angle_deg", "angle_signed_deg", "height_m", "status", "hit", "first_shot_s", "second_shot_s", "notes"]);
+    var out = [head.join(",")];
+    list.forEach(function (r) {
+      var sh = admin ? shooterById(r.uid) : null;
+      for (var i = 0; i < N; i++) {
+        var d = r.dirs[i], st = r.res[i];
+        if (d === "-" && st === "-" && r.t1[i] == null && r.t2[i] == null) continue;
+        var stn = stnOf(r, i) + 1, t = d === "-" ? null : trapFor(r.scheme, stn, d);
+        var row = [r.id, r.uid, r.date, r.startTime, r.startStn, r.session, r.sessionId, r.type, r.scheme, r.field, r.sky, r.wind, r.temp, r.hum, r.shooter];
+        if (admin) row.push(sh ? sh.email : "");
+        row = row.concat([r.place, r.weapon, r.ammo, r.choke1, r.choke2, i + 1, stn, d === "-" ? "" : d, t ? t.n : "", t ? t.side : "", t ? t.angle : "", t ? t.signed : "", t ? t.h : "",
+          st === "-" ? "" : st, st === "-" ? "" : (st === "R" ? 0 : 1), r.t1[i], r.t2[i], r.notes]);
+        out.push(row.map(csvCell).join(","));
+      }
+    });
+    return out.join("\n");
+  }
+  function shootersCsv() {
+    var head = ["shooter_id", "name", "email", "dob", "weapon", "ammo", "choke_1st", "choke_2nd", "created", "consent", "rounds"], out = [head.join(",")];
+    shooters.slice().sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : 1; }).forEach(function (s) {
+      var n = allRounds.filter(function (r) { return r.uid === s.id; }).length;
+      out.push([s.id, s.name, s.email, s.dob, s.weapon, s.ammo, s.choke1, s.choke2, s.createdAt, s.consent, n].map(csvCell).join(","));
+    });
+    return out.join("\n");
+  }
+  function deliverCsv(csv, filename, msg, fb) {
+    fb.hidden = true;
+    function fallback() {
+      var copied = function () { msg.textContent = "CSV copied. Paste it into a spreadsheet."; };
+      var show = function () { fb.value = csv; fb.hidden = false; fb.focus(); fb.select(); msg.textContent = "Copy the CSV text below and paste it into a spreadsheet."; };
+      try { navigator.clipboard.writeText(csv).then(copied, show); } catch (e) { show(); }
+    }
+    if (!dl) { fallback(); return; }
+    dl.save({ filename: filename, data: csv }).then(function () { msg.textContent = "CSV saved."; }, function (e) {
+      if (e && e.code === "declined") { msg.textContent = "Save cancelled."; return; }
+      fallback();
+    });
+  }
+  function exportCsv(list, filename) {
+    var msg = $("exportMsg"), fb = $("csvFallback");
+    fb.hidden = true;
+    if (!list.length || !list.some(hasData)) { msg.textContent = "Nothing to export yet. Record at least one target."; return; }
+    deliverCsv(csvFor(list, false), filename, msg, fb);
+  }
+
+  /* ---------- owner view: every shooter and every round ---------- */
+  var ANG = ["0 to 10°", "15 to 25°", "30 to 35°", "40 to 45°"], HGT = ["Under 2.0 m", "2.0 to 2.5 m", "Over 2.5 m"];
+  var TEMPB = ["Under 15 °C", "15 to 24 °C", "25 °C and over"], HUMB = ["Under 40 %", "40 to 59 %", "60 % and over"];
+  var BLOCKS = ["Shots 1 to 5", "Shots 6 to 10", "Shots 11 to 15", "Shots 16 to 20", "Shots 21 to 25"];
+  function trapAt(r, i) { var d = r.dirs[i]; return d === "-" ? null : trapFor(r.scheme, stnOf(r, i) + 1, d); }
+  var DIMS = [
+    { t: "Direction", order: ["Left", "Straight", "Right"], key: function (r, i) { return { L: "Left", S: "Straight", R: "Right" }[r.dirs[i]] || null; } },
+    { t: "Station", order: ["1", "2", "3", "4", "5"], key: function (r, i) { return String(stnOf(r, i) + 1); } },
+    { t: "Angle", order: ANG, key: function (r, i) { var t = trapAt(r, i); if (!t) return null; var a = Math.abs(t.angle); return a <= 10 ? ANG[0] : a <= 25 ? ANG[1] : a <= 35 ? ANG[2] : ANG[3]; } },
+    { t: "Height at 10 m", order: HGT, key: function (r, i) { var t = trapAt(r, i); if (!t) return null; return t.h < 2 ? HGT[0] : t.h <= 2.5 ? HGT[1] : HGT[2]; } },
+    { t: "Position in round", order: BLOCKS, key: function (r, i) { return BLOCKS[Math.floor(i / 5)]; } },
+    { t: "Scheme", order: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], key: function (r) { return String(r.scheme); } },
+    { t: "Sky", order: ["Sun", "Part cloud", "Overcast", "Rain"], key: function (r) { return { sun: "Sun", part: "Part cloud", overcast: "Overcast", rain: "Rain" }[r.sky] || null; } },
+    { t: "Wind", order: ["Calm", "Light", "Moderate", "Strong"], key: function (r) { return { calm: "Calm", light: "Light", moderate: "Moderate", strong: "Strong" }[r.wind] || null; } },
+    { t: "Temperature", order: TEMPB, key: function (r) { return r.temp == null ? null : r.temp < 15 ? TEMPB[0] : r.temp < 25 ? TEMPB[1] : TEMPB[2]; } },
+    { t: "Humidity", order: HUMB, key: function (r) { return r.hum == null ? null : r.hum < 40 ? HUMB[0] : r.hum < 60 ? HUMB[1] : HUMB[2]; } }
+  ];
+  function pct(a, b) { return b ? (100 * a / b).toFixed(1) + "%" : "–"; }
+  function statsOf(list) {
+    var o = { rounds: list.length, n: 0, hit: 0, g: 0 };
+    list.forEach(function (r) { o.n += recorded(r); o.hit += score(r); o.g += counts(r).G; });
+    return o;
+  }
+  function analyse(list) {
+    return DIMS.map(function (dim) {
+      var g = {};
+      list.forEach(function (r) {
+        for (var i = 0; i < N; i++) {
+          if (r.res[i] === "-") continue;
+          var k = dim.key(r, i); if (k == null) continue;
+          var o = g[k] || (g[k] = { n: 0, hit: 0, g: 0 });
+          o.n++; if (r.res[i] !== "R") o.hit++; if (r.res[i] === "G") o.g++;
+        }
+      });
+      return { t: dim.t, rows: dim.order.filter(function (k) { return g[k]; }).map(function (k) { return { k: k, n: g[k].n, hit: g[k].hit, g: g[k].g }; }) };
+    }).filter(function (d) { return d.rows.length; });
+  }
+  function adminRounds() {
+    var sh = $("admShooter").value, sc = $("admScheme").value;
+    return allRounds.filter(function (r) {
+      if (sh === "none") { if (r.uid) return false; } else if (sh && r.uid !== sh) return false;
+      return !sc || String(r.scheme) === sc;
+    });
+  }
+  function shooterLabel(r) { var s = shooterById(r.uid); return (s && s.name) || r.shooter || "No account"; }
+  function fillAdminFilters() {
+    var sel = $("admShooter"), keep = sel.value, h = '<option value="">All shooters</option>';
+    shooters.slice().sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; }).forEach(function (s) { h += '<option value="' + esc(s.id) + '">' + esc(s.name) + "</option>"; });
+    if (allRounds.some(function (r) { return !r.uid; })) h += '<option value="none">No account</option>';
+    sel.innerHTML = h;
+    sel.value = keep; if (sel.value !== keep) sel.value = "";
+    var sc = $("admScheme"), ks = sc.value, o = '<option value="">All schemes</option>';
+    for (var i = 1; i <= 10; i++) o += '<option value="' + i + '">Scheme ' + i + "</option>";
+    sc.innerHTML = o; sc.value = ks; if (sc.value !== ks) sc.value = "";
+  }
+  function renderAdmin() {
+    if (!isAdmin) return;
+    if (!storeReady) { $("admTiles").innerHTML = ""; $("admMsg").textContent = "Loading data..."; return; }
+    fillAdminFilters();
+    var list = adminRounds(), all = statsOf(list), sel = $("admShooter").value;
+    $("admTiles").innerHTML = [[shooters.length, "Shooters"], [list.length, "Rounds"], [all.n, "Targets"], [pct(all.hit, all.n), "Hit rate"]].map(function (x) {
+      return '<div class="tile"><b>' + esc(x[0]) + "</b><span>" + x[1] + "</span></div>";
+    }).join("");
+    $("btnAdmRounds").textContent = "Export rounds CSV (" + list.length + ")";
+    $("btnAdmShooters").textContent = "Export shooters CSV (" + shooters.length + ")";
+    /* shooters */
+    var rows = shooters.slice().sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; }).map(function (s) {
+      var mine = allRounds.filter(function (r) { return r.uid === s.id; }), st = statsOf(mine), last = "";
+      mine.forEach(function (r) { if (r.date > last) last = r.date; });
+      return { id: s.id, name: s.name, sub: s.email + (last ? " · last " + fmtDate(last) : "") + (s.consent ? "" : " · no consent on file"), st: st };
+    });
+    var orphans = allRounds.filter(function (r) { return !r.uid; });
+    if (orphans.length) { var so = statsOf(orphans), lo = ""; orphans.forEach(function (r) { if (r.date > lo) lo = r.date; }); rows.push({ id: "none", name: "No account", sub: "Rounds not yet added to a shooter" + (lo ? " · last " + fmtDate(lo) : ""), st: so }); }
+    $("admShooters").innerHTML = rows.length
+      ? "<thead><tr><th>Shooter</th><th class=\"num\">Rounds</th><th class=\"num\">Targets</th><th class=\"num\">Hit</th></tr></thead><tbody>" +
+        rows.map(function (x) {
+          return '<tr class="admrow' + (sel === x.id ? " on" : "") + '" data-id="' + esc(x.id) + '"><td>' + esc(x.name) + '<span class="sub">' + esc(x.sub) + '</span></td><td class="num">' + x.st.rounds + '</td><td class="num">' + x.st.n + '</td><td class="num">' + pct(x.st.hit, x.st.n) + "</td></tr>";
+        }).join("") + "</tbody>"
+      : '<tbody><tr><td>No shooter has an account yet.</td></tr></tbody>';
+    /* analysis */
+    $("admAnNote").textContent = all.n
+      ? "Based on " + all.n + " recorded targets in " + list.length + (list.length === 1 ? " round" : " rounds") + (all.n < 100 ? ". The sample is small. Read the percentages with care." : ".") + " Hit counts first and second barrel."
+      : "No recorded targets in this selection.";
+    $("admAnalysis").innerHTML = analyse(list).map(function (d) {
+      return "<div><h3>" + esc(d.t) + '</h3><div class="tablewrap"><table><thead><tr><th>Group</th><th class="num">Targets</th><th class="num">Hit</th><th class="num">1st barrel</th><th></th></tr></thead><tbody>' +
+        d.rows.map(function (x) {
+          return "<tr><td>" + esc(x.k) + '</td><td class="num">' + x.n + '</td><td class="num">' + pct(x.hit, x.n) + '</td><td class="num">' + pct(x.g, x.n) + '</td><td><span class="mbar" aria-hidden="true"><i style="width:' + Math.round(100 * x.hit / x.n) + '%"></i></span></td></tr>';
+        }).join("") + "</tbody></table></div></div>";
+    }).join("");
+    /* rounds */
+    var sorted = list.slice().sort(function (a, b) { return a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0; }), cap = 100;
+    $("admRounds").innerHTML = (sorted.length ? sorted.slice(0, cap).map(function (r) {
+      var mini = ""; for (var i = 0; i < N; i++) mini += '<i class="m-' + r.res[i] + '"></i>';
+      return '<div class="rcard static"><span class="rscore">' + score(r) + "<small>/25</small></span>" +
+        '<span class="rinfo"><span class="rtitle">' + esc(shooterLabel(r)) + " · " + esc(fmtDate(r.date)) + (r.startTime ? " · " + esc(r.startTime) : "") + "</span>" +
+        '<span class="rsub">' + (r.sessionId ? "ID " + esc(r.sessionId) + " · " : "") + "Scheme " + r.scheme + " · Field " + (r.field == null ? "–" : esc(r.field)) + " · Start St " + r.startStn + " · " + esc(r.type) + " · " + recorded(r) + " targets" + (r.place ? " · " + esc(r.place) : "") + "</span>" +
+        (condLine(r) ? '<span class="rsub">' + esc(condLine(r)) + "</span>" : "") + "</span>" +
+        '<span class="mini" aria-hidden="true">' + mini + "</span></div>";
+    }).join("") + (sorted.length > cap ? '<p class="note">Showing the newest ' + cap + " of " + sorted.length + " rounds. The CSV holds all of them.</p>" : "")
+      : '<div class="empty"><b>No rounds in this selection.</b></div>');
+  }
+  function adminExport(kind) {
+    var msg = $("admMsg"), fb = $("admFallback");
+    if (kind === "shooters") { deliverCsv(shootersCsv(), "trap-shooters-" + todayStr() + ".csv", msg, fb); return; }
+    var list = adminRounds().sort(function (a, b) { return a.createdAt < b.createdAt ? -1 : 1; });
+    if (!list.some(hasData)) { msg.textContent = "No recorded targets in this selection."; return; }
+    deliverCsv(csvFor(list, true), "trap-all-rounds-" + todayStr() + ".csv", msg, fb);
+  }
+  function syncTabs() {
+    ["record", "rounds", "schemes", "profile"].forEach(function (k) { $("tabBtn-" + k).hidden = adminOnly; });
+    $("tabBtn-admin").hidden = !isAdmin;
+    $("appTabs").classList.toggle("five", isAdmin && !adminOnly);
+    $("appTabs").classList.toggle("one", adminOnly);
+    $("btnAdminBack").hidden = !adminOnly;
+    $("adminEnter").hidden = !isAdmin;
+  }
+  function enterAdmin() {
+    if (!isAdmin) return;
+    flushNow(); me = null; cur = null; applyRounds(); adminOnly = true;
+    $("whoName").textContent = "Owner view"; setStatus(db ? "Live data" : "This device");
+    syncTabs(); setTab("admin"); showView("app");
+  }
+  function leaveAdmin() {
+    adminOnly = false; syncTabs(); $("admMsg").textContent = ""; $("admFallback").hidden = true;
+    showAuth(shooters.length ? "login" : "register");
+  }
+  /* ---------- views and sign in ---------- */
+  function setMsg(el, text, cls) { el.textContent = text || ""; el.className = "msg" + (cls ? " " + cls : ""); }
+  function showView(v) {
+    $("splash").hidden = v !== "splash"; $("authView").hidden = v !== "auth"; $("consentView").hidden = v !== "consent";
+    $("appTop").hidden = v !== "app"; $("appView").hidden = v !== "app";
+    window.scrollTo(0, 0);
+  }
+  function showAuth(which) {
+    ["login", "register"].forEach(function (k) { $("authTab-" + k).setAttribute("aria-selected", String(k === which)); });
+    $("loginForm").hidden = which !== "login"; $("regForm").hidden = which !== "register";
+    setMsg($("lMsg"), ""); setMsg($("rMsg"), "");
+    showView("auth");
+  }
+  function validDob(v) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    var y = Number(v.slice(0, 4));
+    return y >= 1900 && v <= todayStr();
+  }
+  var fails = 0, lockUntil = 0;
+  function doLogin() {
+    var msg = $("lMsg"), email = $("lEmail").value.trim().toLowerCase(), pw = $("lPw").value, btn = $("btnLogin");
+    setMsg(msg, "");
+    if (Date.now() < lockUntil) { setMsg(msg, "Too many tries. Wait " + Math.ceil((lockUntil - Date.now()) / 1000) + " seconds.", "bad"); return; }
+    if (!email || !pw) { setMsg(msg, "Enter your email and password.", "bad"); return; }
+    var s = shooters.filter(function (x) { return x.emailLower === email; })[0];
+    btn.disabled = true;
+    var fail = function () {
+      fails++; if (fails >= 5) { lockUntil = Date.now() + 15000; fails = 0; }
+      setMsg(msg, "Email or password is wrong.", "bad"); btn.disabled = false;
+    };
+    if (!s) { hashPw(pw, randomHex(16), hasSubtle() ? "p1" : "s1").then(fail, fail); return; }
+    hashPw(pw, s.salt, s.alg).then(function (h) {
+      btn.disabled = false;
+      if (h !== s.hash) { fail(); return; }
+      fails = 0; $("lPw").value = "";
+      if ($("lKeep").checked) lset(K.session, s.id); else ldel(K.session);
+      signIn(s);
+    }, function () { setMsg(msg, "This browser cannot check that password. Open the app in another browser.", "bad"); btn.disabled = false; });
+  }
+  function doRegister() {
+    var msg = $("rMsg"), g = function (id) { return $(id).value.trim(); };
+    var name = g("rName"), dob = $("rDob").value, email = g("rEmail"), weapon = g("rWeapon"), ammo = g("rAmmo"), c1 = g("rCh1"), c2 = g("rCh2"), pw = $("rPw").value, pw2 = $("rPw2").value;
+    var err = "";
+    if (name.length < 2) err = "Enter your name.";
+    else if (!validDob(dob)) err = "Enter your date of birth.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err = "Enter a valid email.";
+    else if (!weapon) err = "Enter your weapon make.";
+    else if (!ammo) err = "Enter your ammo.";
+    else if (!c1 || !c2) err = "Enter the choke for both barrels.";
+    else if (pw.length < 6) err = "Use a password with 6 or more characters.";
+    else if (pw !== pw2) err = "The two passwords do not match.";
+    else if (!$("rConsent").checked) err = "Tick the box to agree to the data use.";
+    else if (shooters.some(function (x) { return x.emailLower === email.toLowerCase(); })) err = "That email already has an account. Sign in instead.";
+    if (err) { setMsg(msg, err, "bad"); return; }
+    var btn = $("btnRegister"); btn.disabled = true; setMsg(msg, "Creating your account...");
+    var alg = hasSubtle() ? "p1" : "s1", salt = randomHex(16);
+    hashPw(pw, salt, alg).then(function (h) {
+      var s = { id: "u" + Date.now().toString(36) + randomHex(3), name: name, dob: dob, email: email, emailLower: email.toLowerCase(), alg: alg, salt: salt, hash: h,
+        weapon: weapon, ammo: ammo, choke1: c1, choke2: c2, createdAt: new Date().toISOString(), consent: new Date().toISOString(), ver: APP.ver };
+      return putShooter(s).then(function () { return s; });
+    }).then(function (s) {
+      btn.disabled = false;
+      if ($("rKeep").checked) lset(K.session, s.id); else ldel(K.session);
+      $("rPw").value = ""; $("rPw2").value = "";
+      shooters = shooters.filter(function (x) { return x.id !== s.id; }); shooters.push(s);
+      signIn(s);
+    }).catch(function () { btn.disabled = false; setMsg(msg, "Could not create the account. Try again.", "bad"); });
+  }
+  function resetRoundState() {
+    idx = 0; started = false; savedOnce = false; timingPref = null; entryWarn = ""; sidAuto = true; startAuto = true; dirty = false;
+    $("exportMsg").textContent = ""; $("csvFallback").hidden = true; $("reportPreview").hidden = true; setMsg($("shareMsg"), "");
+  }
+  function signIn(s) {
+    if (!s.consent) { pendingConsent = s; showView("consent"); return; }
+    pendingConsent = null; adminOnly = false; syncTabs();
+    me = s; applyRounds();
+    cur = newRound(); resetRoundState();
+    renderProfile(); renderMeta(); renderRecord(); renderRounds(); renderSchemeTable();
+    setPhase("setup"); setTab("record"); showView("app");
+    setStatus("New round. Saves after your first target.");
+  }
+  function giveConsent() {
+    var s = pendingConsent; if (!s) return;
+    var btn = $("btnConsent"); btn.disabled = true;
+    s.consent = new Date().toISOString();
+    putShooter(s).then(function () { btn.disabled = false; signIn(s); }, function () { btn.disabled = false; s.consent = ""; setMsg($("cMsg"), "Could not save. Try again.", "bad"); });
+  }
+  function signOut() {
+    pendingConsent = null; flushNow(); ldel(K.session); me = null; applyRounds(); cur = null;
+    $("lPw").value = ""; $("lEmail").value = "";
+    showAuth("login");
+  }
+  function saveProfile() {
+    var msg = $("pMsg"), g = function (id) { return $(id).value.trim(); };
+    var name = g("pName"), dob = $("pDob").value, weapon = g("pWeapon"), ammo = g("pAmmo"), c1 = g("pCh1"), c2 = g("pCh2");
+    var err = name.length < 2 ? "Enter your name." : !validDob(dob) ? "Enter your date of birth." : !weapon ? "Enter your weapon make." : !ammo ? "Enter your ammo." : (!c1 || !c2) ? "Enter the choke for both barrels." : "";
+    if (err) { setMsg(msg, err, "bad"); return; }
+    me.name = name; me.dob = dob; me.weapon = weapon; me.ammo = ammo; me.choke1 = c1; me.choke2 = c2;
+    putShooter(me).then(function () { setMsg(msg, "Saved. New rounds use these details.", "good"); $("whoName").textContent = me.name; },
+      function () { setMsg(msg, "Could not save. Try again.", "bad"); });
+  }
+  function changePw() {
+    var msg = $("pwMsg"), old = $("pOld").value, n1 = $("pNew").value, n2 = $("pNew2").value;
+    if (!old) { setMsg(msg, "Enter your current password.", "bad"); return; }
+    if (n1.length < 6) { setMsg(msg, "Use a new password with 6 or more characters.", "bad"); return; }
+    if (n1 !== n2) { setMsg(msg, "The two new passwords do not match.", "bad"); return; }
+    setMsg(msg, "Checking...");
+    hashPw(old, me.salt, me.alg).then(function (h) {
+      if (h !== me.hash) throw new Error("bad");
+      var alg = hasSubtle() ? "p1" : "s1", salt = randomHex(16);
+      return hashPw(n1, salt, alg).then(function (h2) { me.alg = alg; me.salt = salt; me.hash = h2; return putShooter(me); });
+    }).then(function () { ["pOld", "pNew", "pNew2"].forEach(function (id) { $(id).value = ""; }); setMsg(msg, "Password changed.", "good"); },
+      function (e) { setMsg(msg, e && e.message === "bad" ? "Your current password is wrong." : "Could not change the password. Try again.", "bad"); });
+  }
+  function claimRounds() {
+    var list = unowned.slice();
+    Promise.all(list.map(function (r) { var c = clone(r); c.uid = me.id; return putRound(c); })).then(function () {
+      setStatus("Rounds added to your account."); renderRounds();
+    }, function () { setStatus("Could not add the rounds. Try again."); });
+  }
+
+  /* ---------- round flow ---------- */
+  function setTab(t) {
+    tab = t;
+    ["record", "rounds", "schemes", "profile", "admin"].forEach(function (k) {
+      $("tab-" + k).hidden = k !== t;
+      $("tabBtn-" + k).setAttribute("aria-selected", String(k === t));
+    });
+    if (t === "admin") renderAdmin();
+    if (t === "rounds") renderRounds();
+    if (t === "schemes") renderSchemeTable();
+    window.scrollTo(0, 0);
+  }
+  function setPhase(p) {
+    phase = p;
+    $("phaseSetup").hidden = p !== "setup"; $("phaseRecord").hidden = p !== "record";
+    if (p === "setup") { $("btnStartRound").textContent = started ? "Save and back to recording" : "Start round"; renderMeta(); }
+    else renderRecord();
+    window.scrollTo(0, 0);
+  }
+  function checkSetup() {
+    var miss = [];
+    if (!cur.place.trim()) miss.push(["Range", "fPlace"]);
+    if (cur.field == null) miss.push(["Field", "fField"]);
+    if (!cur.sky) miss.push(["Sky", "fSky"]);
+    if (cur.temp == null) miss.push(["Temperature", "fTemp"]);
+    if (cur.hum == null) miss.push(["Humidity", "fHum"]);
+    return miss;
+  }
+  function startRound() {
+    if (!started) {
+      var miss = checkSetup();
+      ["fPlace", "fField", "fSky", "fTemp", "fHum"].forEach(function (id) { $(id).classList.remove("invalid"); });
+      if (miss.length) {
+        miss.forEach(function (m) { $(m[1]).classList.add("invalid"); });
+        var er = $("startErr"); er.textContent = "Enter " + miss.map(function (m) { return m[0]; }).join(", ") + " before you start."; er.hidden = false;
+        $(miss[0][1]).focus();
+        return;
+      }
+      started = true;
+    }
+    setPhase("record");
+    setStatus(savedOnce ? (db ? "Saved" : "Saved on this device only") : "New round. Saves after your first target.");
+  }
+  function refreshIds() {
+    if (sidAuto) cur.sessionId = genSid(cur);
+    $("fStart").value = cur.startTime || ""; $("fSid").value = cur.sessionId; renderSetupSum(); renderCard();
+  }
+  /* the round starts at its first target: stamp the time unless you set it yourself */
+  function stampStart() {
+    if (!startAuto || cur.date !== todayStr()) return;
+    cur.startTime = nowHM(); refreshIds();
+  }
+  function startNew() {
+    flushNow();
+    cur = newRound(); resetRoundState();
+    setPhase("setup"); setStatus("New round. Saves after your first target.");
+    setTab("record");
+  }
+  function flushNow() { if (dirty && cur) { clearTimeout(saveTimer); saveTimer = null; flush(); } }
+  function openRound(id) {
+    var r = rounds.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    flushNow();
+    cur = clone(r); resetRoundState(); started = true; savedOnce = true; sidAuto = false; startAuto = false; idx = firstIncomplete();
+    setPhase("record"); setStatus(db ? "Saved" : "Saved on this device only");
+    setTab("record");
+  }
+  function afterEntry() {
+    if (cur.dirs[idx] !== "-" && cur.res[idx] !== "-") idx = nextIncomplete(idx);
+    refreshAfterChange();
+  }
+  function copyConditions() {
+    var msg = $("condMsg");
+    var list = sortedRounds().filter(function (r) { return r.id !== cur.id && (r.sky || r.wind || r.temp != null || r.hum != null); });
+    if (!list.length) { msg.textContent = "No earlier round has conditions to copy."; return; }
+    var r = list[0];
+    cur.sky = r.sky; cur.wind = r.wind; cur.temp = r.temp; cur.hum = r.hum;
+    renderCond(); renderCard(); queueSave();
+    ["fSky", "fTemp", "fHum"].forEach(function (id) { $(id).classList.remove("invalid"); });
+    msg.textContent = "Copied from " + fmtDate(r.date) + (r.sessionId ? " · ID " + r.sessionId : "") + ". Change any value that moved.";
+  }
+  function selectTarget(i) {
+    entryWarn = ""; idx = i; renderCard(); renderEntry(); renderTable();
+    $("entry").scrollIntoView({ block: "nearest" });
+  }
+  function deleteRound() {
+    var b = $("btnDelete");
+    if (!b.classList.contains("armed")) {
+      b.classList.add("armed"); b.textContent = "Tap again to delete";
+      clearTimeout(delTimer); delTimer = setTimeout(function () { b.classList.remove("armed"); b.textContent = "Delete round"; }, 4000);
+      return;
+    }
+    clearTimeout(delTimer); b.classList.remove("armed"); b.textContent = "Delete round";
+    var id = cur.id;
+    removeRound(id).then(function () {
+      cur = newRound(); resetRoundState();
+      setPhase("setup"); renderRounds(); setStatus("Round deleted.");
+    }, function () { setStatus("Could not delete. Try again."); });
+  }
+
+  /* ---------- scorecard report: image and PDF ---------- */
+  var CLR = { navy: "#14465F", ink: "#123B52", muted: "#55707E", line: "#D3DEE3", hit: "#17767C", second: "#E3B21F", miss: "#C93B2A", clay: "#E8741A", empty: "#D5DFE3", L: "#2B7F37", S: "#8A6A00", R: "#C93B2A", band: "#F1F5F7", zebra: "#F8FAFB" };
+  function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); }
+  function drawLogo(c, cx, cy, R) {
+    var k = R / 46;
+    c.fillStyle = "#14465F"; circ(c, cx, cy, 46 * k); c.fill();
+    c.strokeStyle = "#FFFFFF"; c.lineWidth = 3 * k; circ(c, cx, cy, 35 * k); c.stroke();
+    c.fillStyle = CLR.clay; circ(c, cx, cy, 23 * k); c.fill();
+    c.fillStyle = "#FFFFFF"; circ(c, cx, cy, 9 * k); c.fill();
+    c.strokeStyle = "#E3B21F"; c.lineWidth = 4 * k; c.lineCap = "round";
+    c.beginPath(); c.moveTo(cx - 44 * k, cy); c.lineTo(cx - 24 * k, cy); c.moveTo(cx + 24 * k, cy); c.lineTo(cx + 44 * k, cy);
+    c.moveTo(cx, cy - 44 * k); c.lineTo(cx, cy - 24 * k); c.moveTo(cx, cy + 24 * k); c.lineTo(cx, cy + 44 * k); c.stroke();
+  }
+  function drawArrow(c, x, y, d, size, color) {
+    var ang = d === "L" ? -3 * Math.PI / 4 : d === "R" ? -Math.PI / 4 : -Math.PI / 2, dx = Math.cos(ang), dy = Math.sin(ang), h = size / 2;
+    var x2 = x + dx * h, y2 = y + dy * h, hl = size * 0.46;
+    c.strokeStyle = color; c.fillStyle = color; c.lineWidth = Math.max(1.4, size / 7); c.lineCap = "round";
+    c.beginPath(); c.moveTo(x - dx * h, y - dy * h); c.lineTo(x2, y2); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 + Math.cos(ang + 2.6) * hl, y2 + Math.sin(ang + 2.6) * hl); c.lineTo(x2 + Math.cos(ang - 2.6) * hl, y2 + Math.sin(ang - 2.6) * hl);
+    c.closePath(); c.fill();
+  }
+  function fitText(c, text, maxW) {
+    text = String(text == null ? "" : text);
+    if (!maxW || c.measureText(text).width <= maxW) return text;
+    while (text.length > 1 && c.measureText(text + "…").width > maxW) text = text.slice(0, -1);
+    return text + "…";
+  }
+  function buildReport(r) {
+    var S = 2, W = 800, H = 1131, cv = document.createElement("canvas");
+    cv.width = W * S; cv.height = H * S;
+    var c = cv.getContext("2d"); c.scale(S, S);
+    var DISP = '"Barlow Condensed", "Arial Narrow", Arial, sans-serif', BODY = 'Barlow, Arial, sans-serif', MONO = '"IBM Plex Mono", Menlo, Consolas, monospace';
+    function T(s, x, y, font, color, align, maxW) { c.font = font; c.fillStyle = color; c.textAlign = align || "left"; c.textBaseline = "alphabetic"; c.fillText(fitText(c, s, maxW), x, y); }
+    c.fillStyle = "#FFFFFF"; c.fillRect(0, 0, W, H);
+    /* header band */
+    c.fillStyle = CLR.navy; c.fillRect(0, 0, W, 92);
+    drawLogo(c, 54, 46, 30);
+    T("TRAP LOGGER", 100, 54, "700 36px " + DISP, "#FFFFFF");
+    T("Ver " + APP.ver + "  ·  Developed by " + APP.by, 100, 76, "400 13px " + BODY, "#C9DCE6");
+    T("SCORECARD", W - 40, 56, "600 24px " + DISP, "#FFFFFF", "right");
+    /* shooter and gun */
+    T(r.shooter || "Shooter", 40, 134, "700 32px " + DISP, CLR.navy, "left", 500);
+    T([r.weapon, r.ammo].filter(Boolean).join("  ·  "), 40, 156, "400 13px " + BODY, CLR.muted, "left", 500);
+    T((r.choke1 || r.choke2) ? "Choke   1st barrel: " + (r.choke1 || "–") + "    2nd barrel: " + (r.choke2 || "–") : "", 40, 174, "400 13px " + BODY, CLR.muted, "left", 500);
+    /* score */
+    T(String(score(r)), 706, 172, "700 100px " + DISP, CLR.navy, "right");
+    T("/25", 712, 172, "600 30px " + DISP, CLR.muted, "left");
+    /* round details */
+    var left = [["Session ID", r.sessionId], ["Date", fmtDate(r.date) + (r.startTime ? "  " + r.startTime : "")], ["Range", r.place], ["Field", r.field == null ? "" : r.field]];
+    var right = [["Scheme", "Scheme " + r.scheme], ["Type", r.type], ["First station", r.startStn || 1], ["Conditions", condLine(r)]];
+    c.fillStyle = CLR.band; c.fillRect(40, 196, 720, 118);
+    for (var q = 0; q < 4; q++) {
+      var y = 222 + q * 26;
+      T(left[q][0].toUpperCase(), 54, y, "600 11px " + BODY, CLR.muted); T(left[q][1], 140, y, "500 14px " + BODY, CLR.ink, "left", 220);
+      T(right[q][0].toUpperCase(), 400, y, "600 11px " + BODY, CLR.muted); T(right[q][1], 504, y, "500 14px " + BODY, CLR.ink, "left", 248);
+    }
+    /* strip */
+    var x0 = 40, gap = 2, bw = (720 - gap * 24) / 25, sy = 360;
+    for (var i = 0; i < N; i++) {
+      var bx = x0 + i * (bw + gap), d = r.dirs[i], st = r.res[i];
+      if (d !== "-") drawArrow(c, bx + bw / 2, sy - 12, d, 14, CLR[d]);
+      c.fillStyle = st === "G" ? CLR.hit : st === "Y" ? CLR.second : st === "R" ? CLR.miss : CLR.empty;
+      c.fillRect(bx, sy, bw, 40);
+      T(String(stnOf(r, i) + 1), bx + bw / 2, sy + 56, "400 11px " + MONO, CLR.muted, "center");
+    }
+    /* counts */
+    var cn = counts(r), cx = 40, cy = 454;
+    [["G", cn.G + " first barrel", CLR.hit], ["Y", cn.Y + " second barrel", CLR.second], ["R", cn.R + " miss", CLR.miss]].forEach(function (it) {
+      c.fillStyle = it[2]; circ(c, cx + 6, cy - 5, 6); c.fill();
+      T(it[1], cx + 18, cy, "500 14px " + BODY, CLR.ink); cx += 22 + c.measureText(it[1]).width + 22;
+    });
+    T(recorded(r) + " of 25 recorded", W - 40, cy, "500 14px " + BODY, CLR.muted, "right");
+    /* table */
+    var timing = false; for (var k = 0; k < N; k++) if (r.t1[k] != null || r.t2[k] != null) timing = true;
+    var ty = 474, rh = 23.5;
+    c.fillStyle = CLR.navy; c.fillRect(40, ty, 720, 24);
+    var hd = [["#", 74, "right"], ["STN", 124, "right"], ["DIR", 160, "center"], ["TRAP", 196, "left"], ["ANGLE", 262, "left"], ["HEIGHT", 372, "right"], ["RESULT", 400, "left"]];
+    if (timing) hd.push(["1ST SHOT S", 640, "right"], ["2ND SHOT S", 738, "right"]);
+    hd.forEach(function (h) { T(h[0], h[1], ty + 16, "600 11px " + BODY, "#FFFFFF", h[2]); });
+    for (var j = 0; j < N; j++) {
+      var ry = ty + 24 + j * rh, dj = r.dirs[j], sj = r.res[j], tj = dj === "-" ? null : trapFor(r.scheme, stnOf(r, j) + 1, dj);
+      if (j % 2) { c.fillStyle = CLR.zebra; c.fillRect(40, ry, 720, rh); }
+      var by = ry + 16;
+      T(String(j + 1), 74, by, "400 13px " + MONO, CLR.ink, "right");
+      T(String(stnOf(r, j) + 1), 124, by, "400 13px " + MONO, CLR.ink, "right");
+      if (dj !== "-") drawArrow(c, 160, ry + rh / 2, dj, 13, CLR[dj]);
+      T(tj ? "T" + tj.n : "–", 196, by, "400 13px " + MONO, CLR.ink);
+      T(tj ? tj.label : "–", 262, by, "400 13px " + MONO, CLR.ink);
+      T(tj ? tj.h.toFixed(2) + " m" : "–", 372, by, "400 13px " + MONO, CLR.ink, "right");
+      if (sj !== "-") {
+        c.fillStyle = sj === "G" ? CLR.hit : sj === "Y" ? CLR.second : CLR.miss; circ(c, 408, ry + rh / 2, 5.5); c.fill();
+        T(sj === "G" ? "1st barrel" : sj === "Y" ? "2nd barrel" : "Miss", 422, by, "500 13px " + BODY, CLR.ink);
+      }
+      if (timing) { if (r.t1[j] != null) T(r.t1[j].toFixed(2), 640, by, "400 13px " + MONO, CLR.ink, "right"); if (r.t2[j] != null) T(r.t2[j].toFixed(2), 738, by, "400 13px " + MONO, CLR.ink, "right"); }
+    }
+    c.strokeStyle = CLR.line; c.lineWidth = 1; c.strokeRect(40, ty, 720, 24 + N * rh);
+    T("Created with TRAP LOGGER Ver " + APP.ver + "  ·  Developed by " + APP.by + "  ·  " + fmtDate(todayStr()), W / 2, H - 16, "400 11px " + BODY, CLR.muted, "center");
+    return cv;
+  }
+  function pdfFromJpeg(jpeg, w, h) {
+    var parts = [], pos = 0, offs = [];
+    function add(x) { if (typeof x === "string") { var b = new Uint8Array(x.length); for (var i = 0; i < x.length; i++) b[i] = x.charCodeAt(i) & 255; x = b; } parts.push(x); pos += x.length; }
+    function obj(n, body) { offs[n] = pos; add(n + " 0 obj\n"); add(body); add("\nendobj\n"); }
+    add("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+    obj(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>");
+    offs[4] = pos; add("4 0 obj\n<< /Type /XObject /Subtype /Image /Width " + w + " /Height " + h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + jpeg.length + " >>\nstream\n");
+    add(jpeg); add("\nendstream\nendobj\n");
+    var cs = "q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";
+    obj(5, "<< /Length " + cs.length + " >>\nstream\n" + cs + "\nendstream");
+    var xref = pos; add("xref\n0 6\n0000000000 65535 f \n");
+    for (var n = 1; n <= 5; n++) add(("0000000000" + offs[n]).slice(-10) + " 00000 n \n");
+    add("trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+    return new Blob(parts, { type: "application/pdf" });
+  }
+  function reportName(ext) { return "trap-scorecard-" + String(cur.sessionId || cur.date).replace(/[^A-Za-z0-9_-]+/g, "-") + "." + ext; }
+  function withReport(fn) {
+    var go = function () {
+      var cv = buildReport(cur), img = $("reportPreview");
+      img.src = cv.toDataURL("image/png"); img.hidden = false;
+      fn(cv);
+    };
+    try { if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go, go); return; } } catch (e) { /* draw anyway */ }
+    go();
+  }
+  function saveBlob(name, blob, label) {
+    var msg = $("shareMsg");
+    function ok() { setMsg(msg, label + " saved.", "good"); }
+    function manual() { setMsg(msg, "Could not save the " + label.toLowerCase() + " here. Press and hold the preview below to save the image.", "bad"); }
+    if (dl) { dl.save({ filename: name, data: blob }).then(ok, function (e) { if (e && e.code === "declined") setMsg(msg, "Save cancelled."); else manual(); }); return; }
+    try {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000); ok();
+    } catch (e) { manual(); }
+  }
+  function shareImage() {
+    withReport(function (cv) {
+      cv.toBlob(function (b) {
+        var f = new File([b], reportName("png"), { type: "image/png" }), msg = $("shareMsg");
+        navigator.share({ files: [f], title: "TRAP LOGGER scorecard" }).then(function () { setMsg(msg, "Shared.", "good"); }, function (e) { setMsg(msg, e && e.name === "AbortError" ? "Share cancelled." : "Could not share. Save the image instead.", e && e.name === "AbortError" ? "" : "bad"); });
+      }, "image/png");
+    });
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("button, tr.row, tr.admrow");
+    if (!t) return;
+    if (t.dataset.auth) { showAuth(t.dataset.auth); return; }
+    if (t.id === "btnConsent") { giveConsent(); return; }
+    if (t.id === "btnConsentOut") { signOut(); return; }
+    if (t.id === "btnAdminEnter") { enterAdmin(); return; }
+    if (t.id === "btnAdminBack") { leaveAdmin(); return; }
+    if (t.id === "btnAdmRounds") { adminExport("rounds"); return; }
+    if (t.id === "btnAdmShooters") { adminExport("shooters"); return; }
+    if (t.classList.contains("admrow")) { $("admShooter").value = $("admShooter").value === t.dataset.id ? "" : t.dataset.id; renderAdmin(); return; }
+    if (t.dataset.tab) { if (t.dataset.tab === "admin" || cur) setTab(t.dataset.tab); return; }
+    if (!cur) return;
+    if (t.id === "btnNew") { startNew(); return; }
+    if (t.id === "btnStartRound") { startRound(); return; }
+    if (t.id === "btnEditSetup") { setPhase("setup"); return; }
+    if (t.id === "btnDelete") { deleteRound(); return; }
+    if (t.id === "btnSignOut") { signOut(); return; }
+    if (t.id === "btnClaim") { claimRounds(); return; }
+    if (t.id === "btnImg") { withReport(function (cv) { cv.toBlob(function (b) { saveBlob(reportName("png"), b, "Image"); }, "image/png"); }); return; }
+    if (t.id === "btnPdf") {
+      withReport(function (cv) {
+        var bin = atob(cv.toDataURL("image/jpeg", 0.92).split(",")[1]), arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        saveBlob(reportName("pdf"), pdfFromJpeg(arr, cv.width, cv.height), "PDF");
+      });
+      return;
+    }
+    if (t.id === "btnShare") { shareImage(); return; }
+    if (t.id === "btnExportOne") { exportCsv([cur], "trap-round-" + (cur.sessionId || cur.date) + ".csv"); return; }
+    if (t.id === "btnExportAll") { exportCsv(sortedRounds().reverse(), "trap-rounds-" + todayStr() + ".csv"); return; }
+    if (t.id === "btnPrev") { selectTarget((idx + N - 1) % N); return; }
+    if (t.id === "btnNext") { selectTarget((idx + 1) % N); return; }
+    if (t.id === "btnClear") {
+      cur.dirs = setAt(cur.dirs, idx, "-"); cur.res = setAt(cur.res, idx, "-"); cur.t1[idx] = null; cur.t2[idx] = null; refreshAfterChange(); return;
+    }
+    if (t.id === "btnCond") { copyConditions(); return; }
+    if (t.dataset.start) { cur.startStn = Number(t.dataset.start); $("fStartStn").value = String(cur.startStn); renderSetupSum(); renderRecord(); return; }
+    if (t.dataset.dir) {
+      var dk = t.dataset.dir;
+      if (cur.dirs[idx] !== dk && isFull(cur, idx, dk)) { entryWarn = fullMsg(idx, dk); renderEntry(); return; }
+      var first1 = !hasData(cur);
+      entryWarn = ""; cur.dirs = setAt(cur.dirs, idx, dk); if (first1) stampStart(); afterEntry(); return;
+    }
+    if (t.dataset.res) { var first2 = !hasData(cur); cur.res = setAt(cur.res, idx, t.dataset.res); if (first2) stampStart(); afterEntry(); return; }
+    if (t.classList.contains("rcard")) { openRound(t.dataset.id); return; }
+    if (t.closest(".strip") && t.dataset.i != null) { selectTarget(Number(t.dataset.i)); return; }
+    if (t.matches("tr.row") && !e.target.closest("input")) { selectTarget(Number(t.dataset.i)); }
+  });
+  $("loginForm").addEventListener("submit", function (e) { e.preventDefault(); doLogin(); });
+  $("regForm").addEventListener("submit", function (e) { e.preventDefault(); doRegister(); });
+  $("profForm").addEventListener("submit", function (e) { e.preventDefault(); saveProfile(); });
+  $("pwForm").addEventListener("submit", function (e) { e.preventDefault(); changePw(); });
+
+  var txt = function (v) { return v.trim(); };
+  var metaMap = {
+    fDate: ["date", function (v) { return v; }], fStart: ["startTime", function (v) { return v; }], fStartStn: ["startStn", numOrNull], fSession: ["session", numOrNull], fSid: ["sessionId", txt],
+    fType: ["type", function (v) { return v; }], fScheme: ["scheme", function (v) { return Number(v); }], fField: ["field", numOrNull],
+    fSky: ["sky", function (v) { return v; }], fWind: ["wind", function (v) { return v; }], fTemp: ["temp", numOrNull], fHum: ["hum", numOrNull],
+    fPlace: ["place", txt], fNotes: ["notes", function (v) { return v; }],
+    fWeapon: ["weapon", txt], fAmmo: ["ammo", txt], fChoke1: ["choke1", txt], fChoke2: ["choke2", txt]
+  };
+  Object.keys(metaMap).forEach(function (id) {
+    $(id).addEventListener("input", function () {
+      if (!cur) return;
+      var m = metaMap[id]; cur[m[0]] = m[1]($(id).value);
+      $(id).classList.remove("invalid");
+      if (id === "fStart") startAuto = false;
+      if (id === "fSid") sidAuto = false;
+      if (sidAuto && (id === "fDate" || id === "fStart")) { cur.sessionId = genSid(cur); $("fSid").value = cur.sessionId; }
+      renderSetupSum(); renderCard();
+      if (id === "fScheme") { renderEntry(); renderTable(); }
+      if (id === "fStartStn") { renderRecord(); }
+      queueSave();
+    });
+  });
+  $("fSid").addEventListener("change", function () {
+    if (cur && $("fSid").value.trim() === "") { sidAuto = true; cur.sessionId = genSid(cur); $("fSid").value = cur.sessionId; renderCard(); queueSave(); }
+  });
+  $("chkTiming").addEventListener("change", function () { timingPref = $("chkTiming").checked; renderTable(); });
+  $("ledger").addEventListener("change", function (e) {
+    var el = e.target; if (!el.classList.contains("tin")) return;
+    var i = Number(el.dataset.i), k = el.dataset.k, raw = el.value.trim().replace(",", "."), v = raw === "" ? null : Number(raw);
+    if (v !== null && !(isFinite(v) && v > 0 && v < 10)) { el.classList.add("bad"); return; }
+    el.classList.remove("bad"); cur[k][i] = v; queueSave();
+  });
+  $("schemeView").addEventListener("change", renderSchemeTable);
+  $("admShooter").addEventListener("change", renderAdmin);
+  $("admScheme").addEventListener("change", renderAdmin);
+
+  /* ---------- start: splash, then sign in ---------- */
+  var opts = "";
+  for (var s = 1; s <= 10; s++) opts += '<option value="' + s + '">Scheme ' + s + "</option>";
+  $("fScheme").innerHTML = opts; $("schemeView").innerHTML = opts; $("schemeView").value = "2";
+  $("logoLg").innerHTML = LOGO_SVG; $("logoAuth").innerHTML = LOGO_SVG; $("logoTop").innerHTML = LOGO_SVG;
+  syncTabs();
+  showView("splash");
+  $("splashMsg").textContent = "Tap to continue";
+  window.addEventListener("error", function (e) { if (!splashDone) $("splashMsg").textContent = "Error: " + (e && e.message ? e.message : "unknown") + ". Open this file in Chrome or Safari."; });
+
+  window.addEventListener("error", function (e) {
+    var m = $("splashMsg"); if (m && !$("splash").hidden) m.textContent = "Error: " + (e && e.message ? e.message : "unknown");
+  });
+  var splashMin = false, splashDone = false, waiting = false, abandonDb = false;
+  function setWait(msg, bad) {
+    var w = $("authWait"); w.hidden = !msg; w.textContent = msg || ""; w.className = "note" + (bad ? " bad" : "");
+    $("btnLogin").disabled = waiting; $("btnRegister").disabled = waiting;
+  }
+  function routeAfterSplash() {
+    var sid = lget(K.session, null), m = sid ? shooters.filter(function (x) { return x.id === sid; })[0] : null;
+    if (m) signIn(m); else showAuth(shooters.length ? "login" : "register");
+  }
+  /* leave the splash at once; if the shared data is slow, show the sign-in screen and wait there */
+  function splashGo() {
+    if (!splashMin) return;
+    if (!splashDone) {
+      splashDone = true;
+      if (storeReady) { routeAfterSplash(); return; }
+      waiting = true; showAuth("login"); setWait("Loading shared data. Sign in or create an account in a moment...");
+      return;
+    }
+    if (waiting && storeReady) { waiting = false; setWait(""); routeAfterSplash(); }
+  }
+  /* if the shared database never answers, fall back to this device after 8 seconds */
+  setTimeout(function () {
+    if (storeReady) return;
+    abandonDb = true; useLocal(); waiting = false;
+    setWait("Shared storage did not answer. Accounts and rounds save on this device only.", true);
+  }, 8000);
+  setTimeout(function () { splashMin = true; splashGo(); }, 2200);
+  $("splash").addEventListener("click", function () { splashMin = true; splashGo(); });
+  $("splash").setAttribute("tabindex", "0");
+  $("splash").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { splashMin = true; splashGo(); } });
+
+  function useLocal() {
+    if (storeReady && !db) return;
+    db = null;
+    shooters = (lget(K.shooters, []) || []).map(function (d) { return shooterNorm(d.id, d); });
+    var raw = lget(K.rounds, null); if (raw == null) raw = lget(K.old, []) || [];
+    allRounds = raw.map(function (d) { return norm(d.id, d); });
+    applyRounds(); storeReady = true; splashGo();
+  }
+  (function connect() {
+    var c = window.claude;
+    if (!c || !c.use) { useLocal(); return; }
+    c.use("downloads").then(function (d) { dl = d || null; }, function () { dl = null; });
+    c.use("user").then(function (u) { return u && u.isOwner ? u.isOwner() : false; }).then(function (v) {
+      isAdmin = !!v; syncTabs(); if (isAdmin && !$("tab-admin").hidden) renderAdmin();
+    }, function () { isAdmin = false; });
+    c.use("db").then(function (d) {
+      if (abandonDb) return;
+      db = d || null;
+      if (!db) { useLocal(); return; }
+      var got = { s: false, r: false };
+      var ready = function () { if (got.s && got.r && !storeReady) { storeReady = true; splashGo(); } };
+      /* an empty or slow collection may not report: after 3 seconds treat what has not arrived as empty */
+      setTimeout(function () { got.s = true; got.r = true; ready(); }, 3000);
+      db.collection("shooters").onSnapshot(function (snap) {
+        shooters = snap.docs.map(function (x) { return shooterNorm(x.id, x.data() || {}); });
+        if (me) { var m2 = shooters.filter(function (x) { return x.id === me.id; })[0]; if (m2) me = m2; }
+        got.s = true; ready();
+        if (isAdmin && !$("tab-admin").hidden) renderAdmin();
+      }, function () { useLocal(); });
+      db.collection("rounds").onSnapshot(function (snap) {
+        allRounds = snap.docs.map(function (x) { return norm(x.id, x.data() || {}); });
+        applyRounds(); got.r = true; ready();
+        if (isAdmin && !$("tab-admin").hidden) renderAdmin();
+        if (me && cur) { renderRounds(); $("btnDelete").hidden = !(savedOnce || rounds.some(function (r) { return r.id === cur.id; })); }
+      }, function () { useLocal(); });
+    }, function () { useLocal(); });
+  })();
+})();
+</script>
+</body>
+</html>
