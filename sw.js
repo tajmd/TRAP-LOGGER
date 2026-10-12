@@ -1,7 +1,7 @@
 /* TRAP LOGGER service worker: keeps the app working with no signal.
    Change CACHE when you upload a new version so phones fetch the new files. */
-var CACHE = "trap-logger-6.0.2";
-var SHELL = ["./", "index.html", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
+var CACHE = "trap-logger-6.1.0";
+var SHELL = ["./", "index.html", "config.js", "supabase.js", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
@@ -26,6 +26,14 @@ self.addEventListener("fetch", function (e) {
         if (!done) { done = true; resolve(res); }
       }).catch(function () { clearTimeout(timer); fallback(); });
     }));
+    return;
+  }
+  /* settings file: newest when online, saved copy when not */
+  if (/\/config\.js$/.test(new URL(req.url).pathname)) {
+    e.respondWith(fetch(req).then(function (res) {
+      if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
+      return res;
+    }).catch(function () { return caches.match(req); }));
     return;
   }
   e.respondWith(caches.match(req).then(function (hit) {
