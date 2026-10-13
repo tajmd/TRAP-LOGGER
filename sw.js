@@ -1,6 +1,6 @@
 /* TRAP LOGGER service worker: keeps the app working with no signal.
    Change CACHE when you upload a new version so phones fetch the new files. */
-var CACHE = "trap-logger-6.1.0";
+var CACHE = "trap-logger-6.1.1";
 var SHELL = ["./", "index.html", "config.js", "supabase.js", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 
 self.addEventListener("install", function (e) {

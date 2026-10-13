@@ -343,6 +343,9 @@ td { font-weight: 600; }
 .check { font-size: 16px; font-weight: 600; }
 .tiles { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 @media (max-width: 430px) { .mbar { width: 26px; } .an td, .an th { padding: 6px 5px; } .an th { font-size: 12px; } }
+
+.choice.res.locked { opacity: .45; border-style: dashed; cursor: not-allowed; }
+.choice.res.locked[aria-pressed="true"] { opacity: 1; }
 </style>
 
 <div id="splash" class="splash" role="dialog" aria-label="TRAP LOGGER Ver 6.1">
@@ -1008,7 +1011,7 @@ td { font-weight: 600; }
     });
     var ress = "";
     [["G", "Hit", "1st barrel"], ["Y", "Hit", "2nd barrel"], ["R", "Miss", "no hit"]].forEach(function (x) {
-      ress += '<button type="button" class="choice res ' + x[0] + '" data-res="' + x[0] + '" aria-pressed="' + (rs === x[0]) + '">' +
+      ress += '<button type="button" class="choice res ' + x[0] + (d === "-" ? " locked" : "") + '" data-res="' + x[0] + '" aria-pressed="' + (rs === x[0]) + '"' + (d === "-" ? ' aria-disabled="true"' : "") + ">" +
         '<span class="big">' + x[1] + '</span><span class="sub">' + x[2] + "</span></button>";
     });
     var sum = "Pick a direction to see the trap.";
@@ -1032,8 +1035,8 @@ td { font-weight: 600; }
       '<div class="entry-head"><div><div class="eyebrow">Target</div><div class="tnum">' + (i + 1) + "<small> / 25</small></div></div>" +
       '<div><div class="pegs">' + pegs + '</div><div class="stn-label">Station ' + stn + "</div></div></div>" +
       (entryWarn ? '<div class="alert" role="alert">' + esc(entryWarn) + "</div>" : "") + hint +
-      '<div><div class="eyebrow" style="margin-bottom:2px">Direction on your scorecard</div><p class="note" style="margin-bottom:6px">Darker color means a higher chance at this station.</p><div class="choices">' + dirs + "</div></div>" +
-      '<div><div class="eyebrow" style="margin-bottom:6px">Result</div><div class="choices">' + ress + "</div></div>" +
+      '<div><div class="eyebrow" style="margin-bottom:2px">Step 1. Direction on your scorecard</div><p class="note" style="margin-bottom:6px">Darker color means a higher chance at this station.</p><div class="choices">' + dirs + "</div></div>" +
+      '<div><div class="eyebrow" style="margin-bottom:6px">Step 2. Result</div>' + (d === "-" ? '<p class="note" style="margin-bottom:6px">Pick the direction first. Then record the result.</p>' : "") + '<div class="choices">' + ress + "</div></div>" +
       '<div class="entry-foot"><span class="trap-sum">' + sum + '</span><span class="btns">' +
       '<button type="button" class="btn" id="btnPrev">Previous</button><button type="button" class="btn" id="btnNext">Next</button>' +
       '<button type="button" class="btn" id="btnClear">Clear target</button></span></div>' +
@@ -2125,7 +2128,11 @@ td { font-weight: 600; }
       var first1 = !hasData(cur), wc1 = isComplete(cur);
       entryWarn = ""; cur.dirs = setAt(cur.dirs, idx, dk); if (first1) stampStart(); afterEntry(wc1); return;
     }
-    if (t.dataset.res) { var first2 = !hasData(cur), wc2 = isComplete(cur); cur.res = setAt(cur.res, idx, t.dataset.res); if (first2) stampStart(); afterEntry(wc2); return; }
+    if (t.dataset.res) {
+      if (cur.dirs[idx] === "-") { entryWarn = "Pick the direction first. Then record the result."; renderEntry(); return; }
+      entryWarn = "";
+      var first2 = !hasData(cur), wc2 = isComplete(cur); cur.res = setAt(cur.res, idx, t.dataset.res); if (first2) stampStart(); afterEntry(wc2); return;
+    }
     if (t.classList.contains("rcard")) { openRound(t.dataset.id); return; }
     if (t.closest(".strip") && t.dataset.i != null) { selectTarget(Number(t.dataset.i)); return; }
     if (t.matches("tr.row") && !e.target.closest("input")) { selectTarget(Number(t.dataset.i)); }
